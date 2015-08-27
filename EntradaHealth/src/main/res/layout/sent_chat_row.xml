@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+	android:background="@android:color/transparent"    
+    android:orientation="vertical" >
+    <TextView
+        android:id="@+id/alert"
+        android:background="@drawable/systemmessage_bg"
+        android:padding="10dp"
+        android:layout_margin="10dp"
+        android:visibility="gone"
+        android:textStyle="italic"
+        android:textSize="16sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"         
+    />
+    <LinearLayout
+        android:id="@+id/message_box"
+        android:layout_below="@id/alert"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/rightchat"
+        android:layout_toLeftOf="@+id/message_photo"
+        android:longClickable="true">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            android:paddingBottom="8dp"
+            android:paddingLeft="2dp"
+            android:paddingRight="2dp"
+            android:paddingTop="2dp" >
+
+            <ImageView
+                android:id="@+id/message_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"                
+                android:background="@color/primarytext"
+                android:paddingBottom="2dp"
+                android:scaleType="centerCrop" />
+   
+            <TextView
+                android:id="@+id/message_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:text="jsda askjjd lfkjf lkfjdf lkj kdjfladjf "
+                android:textSize="16sp" />
+
+            <RelativeLayout
+                android:id="@+id/audioMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+
+                <ImageButton
+                    android:id="@+id/playPauseButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/icon_play" />
+
+                <SeekBar
+                    android:id="@+id/audioSeekbar"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@id/playPauseButton" />
+
+                <TextView
+                    android:id="@+id/timePlayed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/audioSeekbar"
+                    android:layout_toRightOf="@id/playPauseButton"
+                    android:text="0.00" />
+            </RelativeLayout>
+
+            <ImageView
+                android:id="@+id/attach_img"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scaleType="fitXY"
+                android:src="@drawable/loading"
+                android:visibility="gone" />
+
+			<LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:orientation="horizontal"
+                android:paddingTop="1dp" >
+
+                <TextView
+                    android:id="@+id/time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="center_vertical"
+                    android:text="8:39PM"
+                    android:textColor="@color/dark_grey"
+                    android:textSize="12sp" />
+
+                <ImageView
+                    android:id="@+id/statusIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginLeft="4sp"
+                    android:alpha="0.54"
+                    android:gravity="center_vertical"
+                    android:visibility="gone"
+                    android:src="@drawable/ic_received_indicator" />
+                
+                <ImageView
+                    android:id="@+id/statusIndicator1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:alpha="0.54"
+                    android:gravity="center_vertical"
+                    android:visibility="gone"
+                    android:src="@drawable/ic_received_indicator" />
+                <TextView
+                    android:id="@+id/status"
+                    android:paddingLeft="5dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="center_vertical"
+                    android:textSize="12sp"
+                    android:textColor="@color/blue"
+                    android:text="Delivered" />
+                
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/message_photo"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="-1.5dp"
+        android:padding="0dp"
+        android:scaleType="fitXY" />
+
+</RelativeLayout>

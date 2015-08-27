@@ -1,1 +1,8 @@
-include ':TCGradle'
+include ':EntradaHealth'
+include ':vviewpageindicator'
+include ':library'
+include ':library_pinned_listview'
+include ':actionbarsherlock'
+
+
+

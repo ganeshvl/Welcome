@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:padding="16dp">
+
+    <EditText android:id="@+id/userNameText"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              android:inputType="textNoSuggestions"
+              android:hint="@string/add_user_name_hint" />
+
+    <EditText android:id="@+id/pinText"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content"
+              android:layout_below="@id/userNameText"
+              android:hint="@string/add_user_pin_hint"
+              android:inputType="numberPassword"
+              android:digits="1234567890" />
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/pinText"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/btn_round_inactive"
+        android:enabled="true"
+        android:text="@string/add_user_save_account_button"
+        android:textColor="#fff" />
+
+</RelativeLayout>

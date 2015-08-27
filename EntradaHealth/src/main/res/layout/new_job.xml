@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" 
+    android:background="#e8e9eb"
+    android:padding="16dp" >
+    
+    <TextView
+        android:id="@+id/tvCreateJob"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="8dp"
+        android:text="Create a new job"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+    
+    <RelativeLayout
+        android:id="@+id/rlAddAccount"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvCreateJob"
+        android:background="#ffffff" >
+
+        <RelativeLayout
+            android:id="@+id/rlPatient"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp" >
+        
+        <TextView
+            android:id="@+id/lblPatient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="Patient"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvNewPatient"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="16dp"
+            android:layout_toRightOf="@+id/lblPatient"
+            android:layout_toLeftOf="@+id/ivArrow"
+            android:gravity="right"
+            android:textSize="16sp" />
+        
+        <ImageView
+            android:id="@+id/ivArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_arrow"
+            android:visibility="visible" />
+        
+        </RelativeLayout>
+        
+        <RelativeLayout
+            android:id="@+id/rlJobtype"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/rlPatient"
+            android:padding="8dp" >
+        
+        <TextView
+            android:id="@+id/lblJobtype"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="Job Type"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvNewJobtype"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="16dp"
+            android:layout_toRightOf="@+id/lblJobtype"
+            android:layout_toLeftOf="@+id/ivArrow"
+            android:gravity="right"
+            android:textSize="16sp"
+            android:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/ivArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_arrow"
+            android:visibility="visible" />
+        
+        </RelativeLayout>
+        
+        <RelativeLayout
+            android:id="@+id/rlAppTime"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/rlJobtype"
+            android:padding="8dp" >
+        
+        <TextView
+            android:id="@+id/lblAppTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="Appt. Time"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvNewAppTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="16dp"
+            android:layout_toRightOf="@+id/lblAppTime"
+            android:gravity="right"
+            android:textSize="16sp" />
+        
+        </RelativeLayout>
+        
+  	</RelativeLayout>
+    
+
+</RelativeLayout>

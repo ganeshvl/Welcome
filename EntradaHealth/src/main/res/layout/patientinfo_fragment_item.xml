@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/llParentInfo"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:id="@+id/llShortDesc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/tvShortTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#7b7d7b" />
+
+        <TextView
+            android:id="@+id/tvShortDesc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#080808" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/llCompleteDesc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:orientation="vertical" >
+        
+
+        <TextView
+            android:id="@+id/tvMedicationNameLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MEDICATION NAME" />
+
+        <TextView
+            android:id="@+id/tvMedicationNameVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tvGenericNamelbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GENERIC NAME" />
+
+        <TextView
+            android:id="@+id/tvGenericNameVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tvStopDateLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="STOP DATE" />
+
+        <TextView
+            android:id="@+id/tvStopDateVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tvStartDateLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="START DATE" />
+
+        <TextView
+            android:id="@+id/tvStartDateVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tvPrescribedElse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PRESCRIBED ELSEWHERE" />
+
+        <TextView
+            android:id="@+id/tvPrescribedElseVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:id="@+id/llQuantityRefills"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <LinearLayout
+                android:id="@+id/llQuantity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/tvQuantity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Quantity" />
+
+                <TextView
+                    android:id="@+id/tvQuantityVal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llRefills"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/tvRefills"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Refills" />
+
+                <TextView
+                    android:id="@+id/tvRefillsVal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

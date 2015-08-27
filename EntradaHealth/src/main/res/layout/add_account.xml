@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:padding="16dp" >
+
+    <EditText
+        android:id="@+id/displayNameText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="Account Name"
+        android:inputType="textVisiblePassword" />
+
+    <EditText
+        android:id="@+id/clinicCodeText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/displayNameText"
+        android:layout_marginTop="0dp"
+        android:digits="1234567890"
+        android:hint="@string/add_account_clinic_code_hint"
+        android:imeOptions="actionNext"
+        android:inputType="number" />
+
+    <EditText
+        android:id="@+id/accountUsernameText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/clinicCodeText"
+        android:hint="User"
+        android:inputType="textVisiblePassword" />
+
+    <EditText
+        android:id="@+id/accountPasswordText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/accountUsernameText"
+        android:hint="Password"
+        android:inputType="textPassword" />
+    
+    <EditText
+        android:id="@+id/u_usernameText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/accountPasswordText"
+        android:hint="SM Username"
+        android:inputType="textVisiblePassword" />
+
+    <EditText
+        android:id="@+id/u_passwordText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/u_usernameText"
+        android:hint="SM Password"
+        android:inputType="textPassword" />
+
+    <Button
+        android:id="@+id/testButton"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/u_passwordText"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/btn_round_inactive"
+        android:enabled="true"
+        android:text="@string/add_account_test_account_button"
+        android:textColor="#fff"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/u_passwordText"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/btn_round_inactive"
+        android:enabled="true"
+        android:text="@string/add_account_save_account_button"
+        android:textColor="#fff" />
+
+</RelativeLayout>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:padding="0dp" >
+
+    <RelativeLayout
+        android:id="@+id/rlSearch"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/dark_gray"
+        android:padding="8dp" >
+
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:background="@drawable/search_bg_round"
+            android:drawableLeft="@drawable/ic_action_search"
+            android:drawablePadding="8dp"
+            android:ems="10"
+            android:hint="@string/hint_search"
+            android:imeActionLabel="Done"
+            android:imeOptions="actionDone"
+            android:inputType="text|textShortMessage"
+            android:singleLine="true">
+        </EditText>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_horizontal"
+        android:padding="8dp" >
+		<Button 
+		    android:id="@+id/allcontacts"
+		    android:text="All"
+		    android:background="@drawable/grouptypes_background"
+		    android:layout_width="100dp"
+		    android:layout_height="wrap_content"/>	
+		<Button 
+		    android:id="@+id/favcontacts"
+		    android:text="Favorites"
+		    android:background="@drawable/search_bg_round"
+		    android:layout_width="100dp"
+		    android:layout_height="wrap_content"/>	
+    
+    </LinearLayout>
+    
+    <com.hb.views.PinnedSectionListView
+        android:id="@+id/lvAllContacts"
+        android:visibility="visible"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:background="@color/white" >
+    </com.hb.views.PinnedSectionListView>
+    <com.hb.views.PinnedSectionListView
+        android:id="@+id/lvFavorites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@color/white"
+        android:visibility="gone" >
+    </com.hb.views.PinnedSectionListView>
+    
+</LinearLayout>

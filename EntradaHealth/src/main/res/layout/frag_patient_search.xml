@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white" >
+    
+    <com.entradahealth.entrada.android.app.personal.thirdparty.org.droidparts.widget.ClearableEditText
+            android:id="@+id/AddJob_SearchText"
+            style="@android:style/Widget.Holo.EditText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/job_list_search_hint"
+            android:imeOptions="actionNone"
+            android:singleLine="true" />
+
+        <ListView
+            android:id="@+id/AddJob_PatientList"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_below="@id/AddJob_SearchText"
+            android:background="@color/search_background"
+            android:scrollbars="none"
+            android:visibility="visible" />
+
+</RelativeLayout>

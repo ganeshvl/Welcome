@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item   android:id="@+id/SQLDebug_ExecuteQuery"
+            android:text="Execute Query"
+            android:title="Execute Query"
+            android:showAsAction="always|withText" />
+    <item   android:id="@+id/SQLDebug_ExecuteUpdate"
+            android:text="Execute Update"
+            android:title="Execute Update"
+            android:showAsAction="always|withText" />
+</menu>

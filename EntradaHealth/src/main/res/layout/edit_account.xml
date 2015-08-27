@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="fill_parent"
+    android:background="#e8e9eb"
+    android:padding="16dp" >
+    
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="always"
+        >
+        
+        <LinearLayout 
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tvAccInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ACCOUNT INFO"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp"
+        android:textStyle="normal" />
+
+    <RelativeLayout
+        android:id="@+id/rlAccInfo"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvAccInfo"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:background="#ffffff" >
+
+        <EditText
+            android:id="@+id/displayNameText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/add_account_display_name_hint"
+            android:inputType="textVisiblePassword"
+            android:visibility="gone"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/clinicCodeText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/displayNameText"
+            android:layout_marginTop="0dp"
+            android:digits="1234567890"
+            android:hint="@string/add_account_clinic_code_hint"
+            android:inputType="number"
+            android:visibility="gone"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/accountUsernameText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/clinicCodeText"
+            android:hint="@string/add_account_remote_username_hint"
+            android:inputType="textVisiblePassword"
+            android:visibility="gone"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/accountPasswordText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/accountUsernameText"
+            android:hint="@string/add_account_remote_password_hint"
+            android:inputType="textPassword"
+            android:visibility="gone"
+            android:textSize="16sp" />
+        
+         <EditText
+            android:id="@+id/dictatorName"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/add_account_remote_username_hint"
+            android:inputType="textVisiblePassword"
+            android:enabled="false"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/clinicName"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/dictatorName"
+            android:hint="@string/add_account_remote_password_hint"
+            android:inputType="textVisiblePassword"
+            android:enabled="false"
+            android:textSize="16sp" />
+         <EditText
+            android:id="@+id/userName"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/clinicName"
+            android:hint="@string/add_account_remote_username_hint"
+            android:inputType="textVisiblePassword"
+            android:enabled="false"
+            android:textSize="16sp" />
+        </RelativeLayout>
+    
+    <TextView
+        android:id="@+id/tvQueues"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="QUEUES"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp"
+        android:textStyle="normal" />
+    
+    <RelativeLayout
+        android:id="@+id/rlQueues"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvAccInfo"
+        android:layout_marginTop="8dp"
+        android:padding="8dp"
+        android:background="#ffffff" >
+        
+        <LinearLayout
+            android:id="@+id/llQueues"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/tvSelQueue"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="8dp"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvEditQueue"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/queues_edit"
+                android:textSize="16sp"
+                android:visibility="gone" />
+            
+        </LinearLayout>
+        
+        <TextView
+            android:id="@+id/tvExpressQueues"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/llQueues"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="@string/queues_express"
+            android:textSize="16sp"
+            android:textStyle="normal"
+            android:visibility="gone" />
+        
+        </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tvGenJobInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/rlQueues"
+        android:layout_marginTop="8dp"
+        android:text="GENERIC JOB INFO"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp"
+        android:textStyle="normal" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvGenJobInfo"
+        android:layout_marginTop="8dp"
+        android:background="#ffffff"
+        android:orientation="vertical"
+        android:padding="8dp" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/tvMRN"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="MRN"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etMRN"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8"
+                android:ems="10"
+                android:inputType="number" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/tvLastname"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Last Name"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etLastname"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8"
+                android:ems="10"
+                android:inputType="text" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/tvFirstname"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="First Name"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etFirstname"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.8"
+                android:ems="10"
+                android:inputType="text" />
+        </LinearLayout>
+        
+         <RelativeLayout
+             android:id="@+id/rlJobtype"
+             android:layout_width="fill_parent"
+             android:layout_height="wrap_content"
+             android:visibility="gone" >
+        
+        <TextView
+            android:id="@+id/lblJobtype"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:text="Job Type"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvNewJobtype"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="16dp"
+            android:layout_toRightOf="@+id/lblJobtype"
+            android:layout_toLeftOf="@+id/ivArrow"
+            android:gravity="right"
+            android:textSize="16sp"
+            android:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/ivArrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_arrow"
+            android:visibility="visible" />
+        
+        </RelativeLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvAdmin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/linearLayout1"
+        android:layout_below="@+id/linearLayout1"
+        android:layout_marginTop="8dp"
+        android:text="ADMINISTRATION"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp"
+        android:textStyle="normal" />
+
+    <TextView
+        android:id="@+id/tvClearJobs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tvAdmin"
+        android:layout_below="@+id/tvAdmin"
+        android:layout_marginTop="8dp"
+        android:background="#FF8000"
+        android:gravity="center"
+        android:padding="8dp"
+        android:text="Clear Local Data"
+        android:textColor="@color/white"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/btnDelete"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/btn_delete_red"
+        android:text="Delete Account"
+        android:textColor="#ffffff"
+        android:visibility="gone"
+        android:textStyle="normal" />
+    	
+    	</LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

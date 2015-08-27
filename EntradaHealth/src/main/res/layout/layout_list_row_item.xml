@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/padding_5dp" >
+        
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginRight="@dimen/margin_5dp"
+            android:layout_marginLeft="@dimen/margin_5dp" 
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_appointment_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/margin_5dp"
+                android:ellipsize="end"
+                android:gravity="top"
+                android:singleLine="true"
+                android:text="18:50 PM"
+                android:layout_weight="1"
+                android:textSize="@dimen/textsize_small12sp" />
+            
+
+            <ImageView
+                android:id="@+id/appointment_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/content_description"
+                android:layout_gravity="bottom|right"
+                android:padding="@dimen/padding_small3dp"
+                android:src="@drawable/circle" 
+                android:visibility="invisible"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="@dimen/margin_5dp"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/tv_patient_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textStyle="bold"
+                android:text="Pattinson, Chase"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/tv_mrn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="12345678"
+                android:textSize="@dimen/textsize_small12sp" />
+
+            <TextView
+                android:id="@+id/tv_reason"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="Visit for Physical"
+                android:textSize="@dimen/textsize_small12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="@dimen/margin_5dp"
+            android:layout_marginRight="@dimen/margin_5dp"
+            android:visibility="gone" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="bottom"
+                android:singleLine="true"
+                android:text="REC"
+                android:textSize="@dimen/textsize_medium15sp" />
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent" >
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/content_description"
+                android:layout_gravity="center|right"
+                android:src="@drawable/ic_arrow" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

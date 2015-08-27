@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    
+    <GridView 
+        android:id="@+id/myGrid"
+        android:layout_width="match_parent" 
+		android:layout_height="match_parent"
+	    android:padding="8dp"
+	    android:numColumns="auto_fit"
+	    android:columnWidth="0dp"
+	    android:horizontalSpacing="5dp"
+	    android:verticalSpacing="5dp"
+	    android:gravity="center"
+	    android:stretchMode="columnWidth"
+    />
+
+    <View
+        android:id="@+id/vLineBottom"
+		android:layout_width="fill_parent"
+		android:layout_height="1dp"
+		android:layout_above="@+id/foot"
+		android:background="#b0b0b0" />
+    
+    <include layout="@layout/footer_pictures" 
+        android:id="@+id/foot"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_alignParentBottom="true"/>
+    
+</RelativeLayout>

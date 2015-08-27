@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:background="#262b38" >
+              
+    <TextView
+        android:id="@+id/tvListTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="8dp"
+        android:text="Sliding title"
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:visibility="visible" />
+              
+    <ListView
+        android:id="@+id/lvSlidingMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:choiceMode="singleChoice"
+        android:divider="#1C242A"
+        android:dividerHeight="1dp"
+        android:listSelector="@drawable/login_header" />
+
+    <TextView
+        android:id="@+id/JobList_FilterTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="6dp"
+        android:layout_marginTop="10dp"
+        android:text="@string/job_list_filter_title"
+        android:textSize="24sp"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/JobList_SearchView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="6dp"
+        android:layout_marginTop="3dp"
+        android:background="@color/search_background"
+        android:padding="5dp"
+        android:visibility="gone" >
+
+        <com.entradahealth.entrada.android.app.personal.thirdparty.org.droidparts.widget.ClearableEditText
+            android:id="@+id/searchEdit"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:hint="@string/job_list_search_hint"
+            style="@android:style/Widget.Holo.EditText"/>
+
+    </FrameLayout>
+
+    <RelativeLayout
+        android:id="@+id/JobList_FilterCheckboxes"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="6dp"
+        android:layout_marginTop="3dp"
+        android:padding="5dp"
+        android:visibility="gone" >
+
+        <RadioGroup android:id="@+id/JobList_Categories"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content">
+
+            <RadioButton android:id="@+id/JobList_TodayCategory"
+                         android:text="@string/job_list_today_category"
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:checked="true"/>
+
+            <RadioButton android:id="@+id/JobList_TomorrowCategory"
+                         android:text="@string/job_list_tomorrow_category"
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_below="@id/JobList_TodayCategory"
+                         android:checked="false"/>
+
+            <RadioButton android:id="@+id/JobList_TodoCategory"
+                      android:text="@string/job_list_todo_category"
+                      android:layout_height="wrap_content"
+                      android:layout_width="wrap_content"
+                      android:layout_below="@id/JobList_TomorrowCategory"
+                      android:checked="false"/>
+
+            <RadioButton android:id="@+id/JobList_StatCategory"
+                         android:text="@string/job_list_stat_category"
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_below="@id/JobList_TodoCategory"
+                         android:checked="false"/>
+
+            <RadioButton android:id="@+id/JobList_HeldCategory"
+                         android:text="@string/job_list_held_category"
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_below="@id/JobList_StatCategory"
+                         android:checked="false"/>
+
+            <RadioButton android:id="@+id/JobList_DictatedCategory"
+                      android:text="@string/job_list_dictated_category"
+                      android:layout_height="wrap_content"
+                      android:layout_width="wrap_content"
+                      android:layout_below="@id/JobList_HeldCategory"/>
+
+            <RadioButton android:id="@+id/JobList_DeletedCategory"
+                         android:text="@string/job_list_deleted_category"
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_below="@id/JobList_DictatedCategory"/>
+
+            <RadioButton android:id="@+id/JobList_AllCategory"
+                         android:text="@string/job_list_all_category"
+                         android:layout_height="wrap_content"
+                         android:layout_width="wrap_content"
+                         android:layout_below="@id/JobList_DeletedCategory"/>
+        </RadioGroup>
+
+    </RelativeLayout>
+
+
+
+</LinearLayout>

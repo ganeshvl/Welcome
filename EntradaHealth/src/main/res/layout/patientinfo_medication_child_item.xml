@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+   
+    android:background="@android:drawable/editbox_background_normal"
+    android:orientation="vertical"
+     android:gravity="center"
+    android:minHeight="80dp"
+     >
+
+    <include layout="@layout/patientinfo_parent_item" />
+
+    <LinearLayout
+        android:id="@+id/llCompleteDesc"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/tvMedicationNameLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="MEDICATION NAME"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvMedicationNameVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tvGenericNamelbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="GENERIC NAME"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvGenericNameVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvStopDateLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="STOP DATE"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvStopDateVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvStartDateLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="START DATE"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvStartDateVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvPrescribedElse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="PRESCRIBED ELSEWHERE"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvPrescribedElseVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="18sp" />
+
+        <LinearLayout
+            android:id="@+id/llQuantityRefills"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal" >
+
+            <LinearLayout
+                android:id="@+id/llQuantity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/tvQuantity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Quantity"
+                    android:textColor="@color/view_pager_heading_color"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvQuantityVal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/view_pager_text_color"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llRefills"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/tvRefills"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Refills"
+                    android:textColor="@color/view_pager_heading_color"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvRefillsVal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/view_pager_text_color"
+                    android:textSize="18sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
