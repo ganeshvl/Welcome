@@ -12,8 +12,11 @@ android {
         versionName "5.4.0"
         multiDexEnabled true
     }
-    dexOptions {
+     dexOptions {
         jumboMode = true
+        preDexLibraries = false
+        incremental true
+        javaMaxHeapSize "2g"
     }
 
     lintOptions {
