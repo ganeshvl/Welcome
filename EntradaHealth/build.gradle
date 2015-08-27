@@ -12,6 +12,9 @@ android {
         versionName "5.4.0"
         multiDexEnabled true
     }
+    dexOptions {
+        jumboMode = true
+    }
 
     lintOptions {
         abortOnError false
