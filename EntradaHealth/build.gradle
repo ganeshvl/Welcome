@@ -95,7 +95,7 @@ dependencies {
     compile 'commons-io:commons-io:2.4'
     compile 'net.hockeyapp.android:HockeySDK:3.0.0'
     compile 'ch.acra:acra:4.3.0'
-    compile 'com.android.support:multidex:1.0.1'
+    compile 'com.android.support:multidex:1.0.0'
     compile 'com.nineoldandroids:library:2.4.0'
     compile 'com.googlecode.androidannotations:androidannotations-api:2.7'
     compile 'org.cryptonode.jncryptor:jncryptor:1.2.0'
