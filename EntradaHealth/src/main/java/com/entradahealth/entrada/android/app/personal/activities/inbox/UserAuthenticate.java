@@ -126,7 +126,7 @@ public class UserAuthenticate extends DialogTask<Boolean>{
 		}
 		return null;
 	}
-	
+
 	private void instantiateQBSDK(Activity activity){
 		ENTQBChatManagerImpl chatManager = new ENTQBChatManagerImpl();
 		QBSettings.getInstance().fastConfigInit(String.valueOf(chatManager.getAPPLICATION_ID()), chatManager.getAUTHORIZATION_KEY(), chatManager.getAUTHORIZATION_SECRET());

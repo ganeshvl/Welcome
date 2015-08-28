@@ -25,6 +25,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
 import android.support.multidex.MultiDex;
+import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
 import com.entradahealth.entrada.android.R;
@@ -64,7 +65,7 @@ resDialogOkToast = R.string.crash_dialog_ok_toast // optional. displays a Toast
 													// message when the user
 													// accepts to send a report.
         )
-public class EntradaApplication extends Application {
+public class EntradaApplication extends MultiDexApplication {
     private static Context context;
     private static boolean isNew;
     private static ExecutorService executor;
