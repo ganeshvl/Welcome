@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="utf-8"?>
+    
+     <ScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="always"
+        android:background="#e8e9eb"
+        android:padding="16dp"> 
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+     
+
+    <TextView
+        android:id="@+id/tvAccounts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/acc_title_accounts"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp" />
+
+    <ExpandableListView
+        android:id="@+id/userList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="#ffffff"
+        android:divider="#ffffff"
+        android:dividerHeight="2dp"
+        android:visibility="visible" >
+
+    </ExpandableListView>
+    
+    <RelativeLayout
+        android:id="@+id/rlAddAccount"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#ffffff"
+        android:paddingBottom="8dp"
+        android:visibility="visible" >
+    
+    <ImageView
+        android:id="@+id/ivTick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_tick"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/UserSelect_DisplayName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@+id/ivTick"
+        android:text="Add User"
+        android:textSize="18sp"
+        android:textStyle="normal" />
+
+    <ImageView
+        android:id="@+id/ivArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/UserSelect_DisplayName"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="16dp"
+        android:src="@drawable/ic_arrow" />
+    
+    </RelativeLayout>
+    
+    
+    
+    <TextView
+        android:id="@+id/tvGlobalSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        
+        android:layout_marginTop="8dp"
+        android:text="@string/acc_title_global"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:id="@+id/llglobal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="#ffffff"
+        android:orientation="vertical"
+        android:padding="8dp"
+        android:visibility="visible" >
+    
+        <RelativeLayout 
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+        
+		    <TextView
+		        android:id="@+id/tvBluetooth"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tbBluetooth"
+		        android:text="@string/acc_bluetooth"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		
+		    <ToggleButton
+		        android:id="@+id/tbBluetooth"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:text="" />
+    
+    	</RelativeLayout>
+    	
+        <RelativeLayout 
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" >
+        
+		    <TextView
+		        android:id="@+id/tvProximity"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tbProximity"
+		        android:text="@string/acc_proximity"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		
+		    <ToggleButton
+		        android:id="@+id/tbProximity"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:text="" />
+    
+    	</RelativeLayout>
+    	
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" >
+    
+		    <TextView
+		        android:id="@+id/tvSyncDays"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tvSyncDaysCtr"
+		        android:text="@string/acc_days_sync"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		    
+		    <LinearLayout
+		        android:id="@+id/llDaysCtr"
+		        android:layout_width="wrap_content"
+		        android:layout_height="32dp"
+		        android:layout_alignParentRight="true"
+		        android:layout_centerVertical="true"
+		        android:visibility="visible" >
+				        
+				        <Button
+				            android:id="@+id/btnDaysDecr"
+				            android:layout_width="32dp"
+				            android:layout_height="wrap_content"
+				            android:layout_weight="1"
+				            android:background="@drawable/counter_left"
+				            android:text="-"
+				            android:textColor="#919191"
+				            android:textSize="14sp"
+				            android:textStyle="bold" />
+				
+				        <Button
+				            android:id="@+id/btnDaysIncr"
+				            android:layout_width="32dp"
+				            android:layout_height="wrap_content"
+				            android:layout_weight="1"
+				            android:background="@drawable/counter_right"
+				            android:text="+"
+				            android:textColor="#919191"
+				            android:textSize="14sp"
+				            android:textStyle="bold" />
+				    
+				    </LinearLayout>
+
+		    <TextView
+		        android:id="@+id/tvSyncDaysCtr"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignBottom="@+id/tvSyncDays"
+		        android:layout_centerVertical="true"
+		        android:layout_marginRight="16dp"
+		        android:layout_toLeftOf="@+id/llDaysCtr"
+		        android:text="1"
+		        android:textSize="16sp" />
+		    
+	</RelativeLayout>
+	
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" >
+    
+		    <TextView
+		        android:id="@+id/tvSyncMins"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tvSyncMinsCtr"
+		        android:text="@string/acc_mins_sync"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		    
+		    <LinearLayout
+		        android:id="@+id/llMinsCtr"
+		        android:layout_width="wrap_content"
+		        android:layout_height="32dp"
+		        android:layout_alignParentRight="true"
+		        android:layout_centerVertical="true"
+		        android:visibility="visible" >
+				        
+				        <Button
+				            android:id="@+id/btnMinsDecr"
+				            android:layout_width="32dp"
+				            android:layout_height="wrap_content"
+				            android:layout_weight="1"
+				            android:background="@drawable/counter_left"
+				            android:text="-"
+				            android:textColor="#919191"
+				            android:textSize="14sp"
+				            android:textStyle="bold" />
+				
+				        <Button
+				            android:id="@+id/btnMinsIncr"
+				            android:layout_width="32dp"
+				            android:layout_height="wrap_content"
+				            android:layout_weight="1"
+				            android:background="@drawable/counter_right"
+				            android:text="+"
+				            android:textColor="#919191"
+				            android:textSize="14sp"
+				            android:textStyle="bold" />
+				    
+				    </LinearLayout>
+
+		    <TextView
+		        android:id="@+id/tvSyncMinsCtr"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignBottom="@+id/tvSyncMins"
+		        android:layout_centerVertical="true"
+		        android:layout_marginRight="16dp"
+		        android:layout_toLeftOf="@+id/llMinsCtr"
+		        android:text="5"
+		        android:textSize="16sp" />
+		    
+	</RelativeLayout>
+	
+        <RelativeLayout 
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+        
+		    <TextView
+		        android:id="@+id/tvVibeOnRecord"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tbVibeOnRecord"
+		        android:text="@string/acc_vibe_on_record"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		
+		    <ToggleButton
+		        android:id="@+id/tbVibeOnRecord"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:text="" />
+    
+    	</RelativeLayout>
+    	
+        <RelativeLayout 
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+        
+		    <TextView
+		        android:id="@+id/tvVibeOnStop"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tbVibeOnStop"
+		        android:text="@string/acc_vibe_on_stop"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		
+		    <ToggleButton
+		        android:id="@+id/tbVibeOnStop"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:text="ToggleButton" />
+    
+    	</RelativeLayout>
+    	
+        <RelativeLayout
+            android:id="@+id/rlSecureMessaging"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" >
+        
+		    <TextView
+		        android:id="@+id/tvSecureMessaging"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_centerVertical="true"
+		        android:layout_toLeftOf="@+id/tbSecureMessaging"
+		        android:text="@string/acc_secure_messaging"
+		        android:textSize="16sp"
+		        android:textStyle="normal" />
+		
+		    <ToggleButton
+		        android:id="@+id/tbSecureMessaging"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:text="" />
+    
+    	</RelativeLayout>
+    
+    </LinearLayout>
+    
+    <TextView
+        android:id="@+id/tvPasscodeTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/acc_title_passcode"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp" />
+    
+    <RelativeLayout
+        android:id="@+id/rlPasscode"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:paddingLeft="4dp"
+        android:paddingBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:background="#ffffff" >
+
+    <TextView
+        android:id="@+id/tvPasscode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:text="@string/acc_passcode"
+        android:textSize="18sp"
+        android:textStyle="normal" />
+    
+    <TextView
+        android:id="@+id/tvPasscodeTime"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="2dp"
+        android:layout_toLeftOf="@+id/ivPasscodeArrow"
+        android:layout_toRightOf="@+id/tvPasscode"
+        android:ellipsize="end"
+        android:gravity="right"
+        android:singleLine="true"
+        android:text=""
+        android:textColor="@color/acc_title"
+        android:textSize="14sp"
+        android:textStyle="normal" />
+
+    <ImageView
+        android:id="@+id/ivPasscodeArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="0dp"
+        android:src="@drawable/ic_arrow" />
+    
+    </RelativeLayout>
+    
+    <TextView
+        android:id="@+id/tvAdministration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/admin_title"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp" />
+    
+    <LinearLayout 
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" 
+        android:layout_marginTop="8dp"
+        android:background="#ffffff" >
+    
+        <TextView
+            android:id="@+id/tvLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="@string/admin_logs"
+            android:textSize="18sp" />
+    
+    	<TextView
+    	    android:id="@+id/tvDiagnostics"
+    	    android:layout_width="match_parent"
+    	    android:layout_height="wrap_content"
+    	    android:gravity="center"
+    	    android:padding="8dp"
+    	    android:text="@string/admin_diagnostics"
+    	    android:textSize="18sp" />
+        
+    </LinearLayout>
+    
+    <TextView
+        android:id="@+id/tvSoftware"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/sw_title"
+        android:textColor="@color/acc_title"
+        android:textSize="16sp" />
+    
+    <RelativeLayout
+        android:id="@+id/rlVersion"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:layout_marginTop="8dp"
+        android:background="#ffffff" >
+
+    <TextView
+        android:id="@+id/lblVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:text="@string/sw_version"
+        android:textSize="18sp"
+        android:textStyle="normal" />
+    
+    <TextView
+        android:id="@+id/tvVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:ellipsize="end"
+        android:text=""
+        android:textColor="@color/acc_title"
+        android:textSize="14sp"
+        android:textStyle="normal" />
+       
+    </RelativeLayout>
+    
+    <RelativeLayout
+        android:id="@+id/rlBuild"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:layout_marginTop="0dp"
+        android:background="#ffffff" >
+
+    <TextView
+        android:id="@+id/lblBuild"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:text="@string/sw_build"
+        android:textSize="18sp"
+        android:textStyle="normal" />
+    
+    <TextView
+        android:id="@+id/tvBuild"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:ellipsize="end"
+        android:text=""
+        android:textColor="@color/acc_title"
+        android:textSize="14sp"
+        android:textStyle="normal" />
+       
+    </RelativeLayout>
+    
+
+    
+    </LinearLayout>
+    </ScrollView> 
+    

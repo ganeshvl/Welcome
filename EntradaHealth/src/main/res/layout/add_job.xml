@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/AddJob_GenericJob"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/btn_round"
+        android:text="@string/add_job_generic_job_caption"
+        android:textColor="#ffffff"
+        android:textStyle="bold" />
+    
+    <Button
+        android:id="@+id/AddNewJob"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/AddJob_GenericJob"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/btn_round"
+        android:text="@string/add_job_patient_job_caption"
+        android:textColor="#ffffff"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/AddJob_PatientHelpText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/AddJob_GenericJob"
+        android:layout_marginLeft="20dp"
+        android:text="@string/add_job_patient_help_text"
+        android:textSize="18dp"
+        android:visibility="gone" />
+
+    <RelativeLayout
+        android:id="@+id/rlPList"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/AddJob_PatientHelpText"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:visibility="gone" >
+
+        <com.entradahealth.entrada.android.app.personal.thirdparty.org.droidparts.widget.ClearableEditText
+            android:id="@+id/AddJob_SearchText"
+            style="@android:style/Widget.Holo.EditText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/job_list_search_hint"
+            android:imeOptions="actionNone"
+            android:singleLine="true" />
+
+        <ListView android:id="@+id/AddJob_PatientList"
+                  android:layout_width="fill_parent"
+                  android:layout_height="fill_parent"
+                  android:layout_below="@id/AddJob_SearchText"
+                  android:layout_alignParentBottom="true"
+                  android:visibility="gone"
+                  android:background="@color/search_background"/>
+
+        <TextView android:id="@+id/AddJob_SearchFeedback"
+                  android:layout_width="fill_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="10dp"
+                  android:layout_below="@id/AddJob_SearchText"
+                  android:gravity="center_horizontal"
+                  android:textColor="@color/base1"
+                  android:text="@string/search_feedback_searching"
+                  android:textSize="20dp"/>
+
+
+    </RelativeLayout>
+
+</RelativeLayout>

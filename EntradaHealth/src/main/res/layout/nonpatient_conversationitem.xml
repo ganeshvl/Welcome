@@ -1,0 +1,141 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@drawable/list_background" >
+
+        <LinearLayout
+            android:id="@+id/back"
+            android:layout_width="fill_parent"
+            android:layout_height="@dimen/height_list"
+            android:gravity="right"
+            android:background="@drawable/list_background" >
+
+            <Button
+                android:id="@+id/btn_more"
+                android:layout_width="85dp"
+                android:layout_height="@dimen/height_list"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:background="#808080"
+                android:layout_gravity="center_vertical"
+                android:text="More"
+                android:visibility="gone"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_delete"
+                android:layout_width="85dp"
+                android:layout_height="@dimen/height_list"
+                android:paddingRight="10dp"
+                android:paddingLeft="10dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:background="@color/red"
+                android:layout_gravity="center_vertical"
+                android:text="Delete"
+                android:textStyle="bold" />
+        </LinearLayout>
+        
+        <RelativeLayout
+            android:id="@+id/front"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/height_list"
+            android:padding="5dp"
+            android:background="@drawable/list_background">
+            <ImageView
+                android:id="@+id/patientImage"
+                android:layout_width="65dp"
+                android:layout_height="65dp"
+                android:paddingRight="10dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/no_patient_conversation_icon" />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/patientImage"
+                android:background="@android:color/transparent"
+                android:orientation="horizontal" >
+
+            <ImageView
+                android:id="@+id/arrow_img"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:paddingLeft="3dp"
+                android:paddingRight="3dp"
+                android:src="@drawable/ic_arrow" />
+
+            <TextView
+                android:id="@+id/lastmessageDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toLeftOf="@id/arrow_img"
+                android:paddingLeft="5dp"
+                android:text="2/17 8:31 AM"
+                android:textColor="@color/blue" />
+
+                <TextView
+                    android:id="@+id/msgtype"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_toLeftOf="@id/lastmessageDate"
+                    android:singleLine="true"
+                    android:text="Message"
+                    android:textColor="@color/primarytext"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/unreadMessagesCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/msgtype"
+                    android:layout_toLeftOf="@id/arrow_img"
+                    android:background="@color/blue"
+                    android:padding="7dp"
+                    android:text="2"
+                    android:textColor="@color/white"
+                    android:visibility="visible" />
+
+                <LinearLayout
+                    android:id="@+id/lastmessagelayout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_below="@id/msgtype"
+                    android:layout_toLeftOf="@id/unreadMessagesCount"
+                    android:orientation="vertical" >
+
+                    <TextView
+                        android:id="@+id/recepient"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:singleLine="true"
+                        android:text="Michael Cardwell M.D/ Entrada"
+                        android:textColor="@color/black1"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/lastmessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:paddingRight="5dp"
+                        android:singleLine="true"
+                        android:text="Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor."
+                        android:textColor="@color/black2" />
+                </LinearLayout>
+            </RelativeLayout>
+        </RelativeLayout>
+
+</FrameLayout>

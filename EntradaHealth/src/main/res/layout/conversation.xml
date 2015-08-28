@@ -1,0 +1,103 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@color/conversation_background_color"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <LinearLayout
+        android:id="@+id/llmessagebox"
+        android:padding="5dp"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@color/conversation_messagebox_background_color" >
+
+        <TextView
+            android:id="@+id/participantsLeftMsg"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/participants_left_msg"
+            android:gravity="center"
+            android:textSize="18sp"
+            android:textColor="@color/acc_title"
+            android:visibility="gone"
+            />
+        <TextView
+            android:id="@+id/tvRecDuration"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="8dp"
+            android:gravity="center_vertical"
+            android:text="00:00"
+            android:textColor="@color/acc_title"
+            android:textSize="30sp"
+            android:visibility="gone" />
+        
+	     <Button
+	         android:id="@+id/btnattach"
+	         android:layout_marginLeft="5dp"
+	         android:layout_marginRight="10dp"
+	         android:padding="10dp"
+	         android:layout_width="30dp"
+	         android:layout_height="30dp"
+	         android:layout_gravity="center_vertical"
+	         android:background="@drawable/ic_action_attach_content"
+	         android:visibility="visible" />
+	     
+        <EditText
+            android:id="@+id/etmessagebox"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_margin="8dp"
+            android:layout_weight="0.2"
+            android:maxLines="5"
+            android:ems="10"
+            android:hint="@string/hint_chat_msg"
+            android:imeActionLabel="Done"
+            android:imeOptions="actionDone"
+            android:background="@drawable/textbox_bg"
+            android:inputType="textMultiLine"
+            android:singleLine="false"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:visibility="visible" >
+            <requestFocus />
+        </EditText>
+                          
+	     <TextView
+	         android:id="@+id/btnSend"
+	         android:layout_width="45dp"
+	         android:layout_height="wrap_content"
+	         android:text="Send"
+	         android:layout_gravity="center_vertical"
+	         android:background="@android:color/transparent"
+	         android:textSize="18sp"
+	         android:textColor="@color/blue"
+	         android:visibility="gone" />
+	     
+	     <Button
+	         android:id="@+id/btnrecordaudio"
+	         android:padding="10dp"
+	         android:layout_marginLeft="5dp"
+	         android:layout_marginRight="10dp"
+	         android:layout_width="30dp"
+	         android:layout_height="30dp"
+	         android:layout_gravity="center_vertical"
+	         android:background="@drawable/ic_action_mic" />
+	    
+	    </LinearLayout>
+    
+    <ListView
+        android:id="@+id/lvChatList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/llmessagebox"
+        android:layout_alignParentLeft="true"
+        android:transcriptMode="alwaysScroll"
+        android:stackFromBottom="true"
+        android:background="@color/conversation_background_color"
+        android:divider="@color/white" >
+
+    </ListView>
+    
+</RelativeLayout>

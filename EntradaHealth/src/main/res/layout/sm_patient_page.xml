@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#F1EBEB"
+    android:keepScreenOn="true"
+    android:orientation="vertical" >
+
+    <RelativeLayout
+        android:id="@+id/rlTop"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/acc_bg"
+        android:padding="12dp" >
+
+        <ImageView
+            android:id="@+id/ivPatientImg"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentLeft="true"
+            android:src="@drawable/pat_photo" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/ivPatientImg"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/patientNameText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@+id/patientMRNText"
+                android:ellipsize="end"
+                android:paddingLeft="8dp"
+                android:singleLine="true"
+                android:text="Name, Patient"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/patientMRNText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="4dp"
+                android:layout_marginTop="0dp"
+                android:ellipsize="end"
+                android:paddingLeft="8dp"
+                android:singleLine="true"
+                android:text="9999999"
+                android:textColor="@color/dark_grey"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/patientSex"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@+id/patientMRNText"
+                android:ellipsize="end"
+                android:paddingLeft="8dp"
+                android:singleLine="true"
+                android:text="Gender"
+                android:textColor="@color/dark_grey"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/patientDOB"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toLeftOf="@+id/patientMRNText"
+                android:ellipsize="end"
+                android:paddingLeft="8dp"
+                android:singleLine="true"
+                android:text="DOB"
+                android:textColor="@color/dark_grey"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </RelativeLayout>
+    
+    <RelativeLayout
+        android:id="@+id/llPatientInfoLayer"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/rlTop"
+        android:layout_alignParentBottom="true"
+        android:background="#fff"
+        android:visibility="visible" >
+
+        <TextView
+            android:id="@+id/tvPatientInfoTitle"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true" />
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvPatientInfoTitle"
+            android:layout_marginBottom="30dp" />
+
+        <com.viewpagerindicator.CirclePageIndicator
+            android:id="@+id/indicator"
+            android:layout_width="fill_parent"
+            android:layout_height="20dp"
+            android:layout_alignParentBottom="true" />
+    </RelativeLayout>
+
+</RelativeLayout>

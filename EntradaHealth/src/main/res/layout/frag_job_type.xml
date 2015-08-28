@@ -1,0 +1,46 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:background="#fff">
+    
+    <LinearLayout
+        android:id="@+id/llJobTypeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/jtype_header_bg"
+        android:orientation="vertical"
+        android:padding="8dp" >
+       
+        <TextView
+            android:id="@+id/tvJobTypeTitle"
+            style="@style/boldText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="Job Type"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:id="@+id/tvTagCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="Count of Available Tags"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+ 	</LinearLayout>
+ 	
+        <ListView
+            android:id="@+id/lvTags"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent" 
+            android:background="#fff"
+            android:cacheColorHint="#00000000"
+            android:fadingEdgeLength="0dp"
+            android:dividerHeight="1dp"
+            android:divider="#fff"
+            android:padding="4dp">
+        </ListView>
+
+</LinearLayout>

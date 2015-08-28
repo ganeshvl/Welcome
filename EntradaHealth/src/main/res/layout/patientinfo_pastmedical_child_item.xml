@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+   android:background="@android:drawable/editbox_background_normal"
+    android:orientation="vertical"
+   android:gravity="center"
+    android:minHeight="80dp"
+     >
+
+    <include layout="@layout/patientinfo_parent_item" 
+        />
+
+    <LinearLayout
+        android:id="@+id/llCompleteDesc"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/tvHistoryNameLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="HISTORY NAME"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvHistoryNameVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tvDateLbl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="DATE"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvDateVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/tvResolvedBy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Resolved By"
+            android:textColor="@color/view_pager_heading_color"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvResolvedByVal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/view_pager_text_color"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+</LinearLayout>

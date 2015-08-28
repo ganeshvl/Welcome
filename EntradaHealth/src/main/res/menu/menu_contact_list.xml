@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/item_sel_done"
+        android:title="Done"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:visible="false" />
+        
+    <item android:id="@+id/item_add_to_favorite"
+        android:title="Add To Favorites"
+        android:orderInCategory="1"
+        android:showAsAction="always" />
+    
+    <item android:id="@+id/item_create_group"
+        android:title="Done"
+        android:orderInCategory="1"
+        android:showAsAction="always" />
+    
+</menu>

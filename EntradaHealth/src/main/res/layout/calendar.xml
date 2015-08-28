@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/white"
+        android:orientation="vertical" >
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white" >
+
+            <TextView
+                android:id="@+id/dateTypeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_marginRight="@dimen/margin_10dp"
+                android:textColor="@color/red"
+                android:textSize="@dimen/textsize_cal_20sp"
+                android:visibility="invisible" />
+
+            <ImageView
+                android:id="@+id/closeDatePickerImageView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:background="@android:drawable/ic_delete"
+                android:contentDescription="@string/content_description" />
+
+            <ProgressBar
+                android:id="@+id/progressdialog"
+                android:layout_width="@dimen/prpgressbar_size"
+                android:layout_height="@dimen/prpgressbar_size"
+                android:padding="@dimen/padding_5dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentTop="true"
+                android:visibility="invisible" />
+
+        </RelativeLayout>
+
+        <LinearLayout
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/margin_5dp"
+            android:layout_marginTop="@dimen/margin_5dp"
+            android:background="@android:color/white"
+            android:gravity="center"
+            android:orientation="horizontal" >
+
+            <RelativeLayout
+                android:id="@+id/previousMonthArrowLayout"
+                android:layout_width="@dimen/arrow_width"
+                android:layout_height="@dimen/arrow_height" >
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/content_description"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/arrow_left"
+                    android:visibility="visible" />
+            </RelativeLayout>
+
+            <TextView
+                android:id="@+id/monthYearHeaderTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="@dimen/margin_25dip"
+                android:layout_marginRight="@dimen/margin_25dip"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <RelativeLayout
+                android:id="@+id/nextMonthArrowLayout"
+                android:layout_width="@dimen/arrow_width"
+                android:layout_height="@dimen/arrow_height" >
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/content_description"
+                    android:layout_centerInParent="true"
+                    android:background="@drawable/arrow_right"
+                    android:visibility="visible" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/tab_bar_background_top" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingBottom="@dimen/padding_small3dp"
+            android:paddingTop="@dimen/padding_small3dp"
+            android:weightSum="7" >
+
+            <TextView
+                android:id="@+id/sundayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="S"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <TextView
+                android:id="@+id/mondayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="M"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <TextView
+                android:id="@+id/tuesdayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="T"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <TextView
+                android:id="@+id/wednesdayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="W"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <TextView
+                android:id="@+id/thursdayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="T"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <TextView
+                android:id="@+id/fridayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="F"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+
+            <TextView
+                android:id="@+id/satdayTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="S"
+                android:textColor="#000000"
+                android:textSize="@dimen/textsize_cal_18sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/tab_bar_background_top" />
+
+        <GridView
+            android:id="@+id/gridview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:listSelector="@android:color/transparent"
+            android:numColumns="7"
+            android:stretchMode="columnWidth" />
+    </LinearLayout>
+
+</RelativeLayout>

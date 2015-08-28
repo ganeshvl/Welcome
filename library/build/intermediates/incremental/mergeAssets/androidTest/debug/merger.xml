@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="unspecified"><source path="D:\Eclipse-Maven\Entrada-studio\EntradaHealth-studio\library\build\intermediates\exploded-aar\EntradaHealth-studio\actionbarsherlock\unspecified\assets"/></dataSet><dataSet config="debug"><source path="D:\Eclipse-Maven\Entrada-studio\EntradaHealth-studio\library\build\intermediates\bundles\debug\assets"/></dataSet><dataSet config="main"><source path="D:\Eclipse-Maven\Entrada-studio\EntradaHealth-studio\library\src\androidTest\assets"/></dataSet></merger>

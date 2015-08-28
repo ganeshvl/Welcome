@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ 	android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="10dp">
+ 
+    <TextView
+        android:id="@+id/usertext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/light_gray"
+		android:text="USER"
+		android:paddingLeft="10dp"
+		android:paddingTop="5dp"
+        android:paddingBottom="5dp"		
+		android:layout_alignParentRight="true" />
+    <TextView
+        android:id="@+id/lblListHeader"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@id/usertext"
+        android:textSize="16dp"
+        android:textStyle="bold"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:singleLine="true"
+        android:ellipsize="marquee"
+        android:scrollHorizontally="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:focusable="true" 
+    	android:focusableInTouchMode="true" 
+    	android:freezesText="true"
+        android:text="abc" />
+</RelativeLayout>

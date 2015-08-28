@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@android:color/transparent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" >
+    <TextView
+        android:id="@+id/alert"
+        android:background="@drawable/systemmessage_bg"
+        android:padding="10dp"
+        android:layout_margin="10dp"
+        android:visibility="gone"
+        android:textStyle="italic"
+        android:textSize="16sp"        
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true" />
+<RelativeLayout 
+    android:id="@+id/rootLayout"
+    android:layout_below="@id/alert"
+    android:padding="7dp"
+    android:background="@drawable/leftchat"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" >
+    <TextView
+        android:id="@+id/fromContact"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="5dp"
+        android:textStyle="bold"
+        android:paddingLeft="8dp"
+        android:textColor="#4682B4"
+        android:text="Ankitha"
+        android:textSize="16sp" />
+    
+    <TextView
+        android:id="@+id/message_text"
+        android:layout_below="@id/fromContact"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:text="lkj kdjfladjf xbxbf dfhghdf dhdgghrghg xffgdhdgh ddghg "
+        android:textSize="16sp" />
+    <LinearLayout
+        android:id="@+id/nonmsgLayout"
+        android:layout_width="wrap_content"
+       	android:layout_height="wrap_content"
+       	android:layout_below="@id/message_text">
+     <RelativeLayout
+            android:id="@+id/audioMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageButton
+                android:id="@+id/playPauseButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:src="@drawable/icon_play" />
+
+            <SeekBar
+                android:id="@+id/audioSeekbar"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/playPauseButton" />
+
+            <TextView
+                android:id="@+id/timePlayed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/audioSeekbar"
+                android:paddingLeft="5dp"
+                android:layout_toRightOf="@id/playPauseButton"
+                android:text="0.00" />
+        </RelativeLayout>
+        <ImageView
+                android:id="@+id/attach_img"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:src="@drawable/loading"
+                android:visibility="gone" />
+        </LinearLayout>
+     
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/nonmsgLayout" >    
+    <TextView 
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:paddingBottom="5dp"
+        android:text="8:39PM"
+        android:textColor="@color/dark_grey" />
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_vertical"
+                android:paddingLeft="5dp"
+                android:text="Delivered"
+                android:textColor="@color/blue"
+                android:textSize="12sp"
+                android:visibility="gone" />
+    </LinearLayout>
+</RelativeLayout>
+</RelativeLayout>

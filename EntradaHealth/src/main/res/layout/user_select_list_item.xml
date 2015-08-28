@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="fill_parent"
+              android:layout_height="wrap_content">
+              
+    <RelativeLayout 
+        android:id="@+id/rlData"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        
+    <ImageView
+        android:id="@+id/ivTick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:src="@drawable/ic_tick"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/UserSelect_DisplayName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@+id/ivTick"
+        android:text="Display Name"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/ivArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/UserSelect_DisplayName"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="16dp"
+        android:src="@drawable/ic_arrow" />
+    
+    </RelativeLayout>
+    
+      <RelativeLayout
+          android:id="@+id/rlPin"
+          android:layout_width="fill_parent"
+          android:layout_height="wrap_content"
+          android:layout_below="@+id/rlData"
+          android:layout_marginLeft="16dp"
+          android:layout_marginRight="16dp"
+          android:visibility="gone" >
+
+        <EditText
+            android:id="@+id/xetpin"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/str_pin"
+            android:inputType="numberPassword"
+            android:textSize="16sp" >
+
+            <requestFocus />
+        </EditText>
+
+        <ImageView
+            android:id="@+id/ivButton"
+            android:layout_width="32dp"
+            android:layout_height="24dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_margin="4dp"
+            android:src="@drawable/player_play"
+            android:visibility="invisible" />
+    </RelativeLayout>
+
+</RelativeLayout>

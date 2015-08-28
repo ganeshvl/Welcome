@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:padding="16dp" >
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="20dp"
+        android:text="Log In"
+        android:textColor="@color/blue"
+        android:layout_centerHorizontal="true"
+        android:textSize="35sp"
+        />
+    
+    <EditText        
+        android:id="@+id/userid"
+        android:layout_below="@id/title"
+        android:layout_marginTop="20dp"
+        android:layout_height="wrap_content" 
+        android:layout_width="fill_parent"
+        android:hint="User ID"
+        android:inputType="textVisiblePassword" 
+        />
+
+    <EditText        
+        android:id="@+id/password"
+        android:layout_below="@id/userid"
+        android:layout_marginTop="10dp"
+        android:layout_height="wrap_content" 
+        android:layout_width="fill_parent"
+        android:hint="Password"
+        android:inputType="textPassword" 
+        />
+    
+    <Button
+        android:id="@+id/loginButton"
+        android:layout_below="@id/password"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/btn_round_inactive"
+        android:enabled="true"
+        android:text="Log In"
+        android:textColor="#fff" />
+    
+	<TextView
+	    android:id="@+id/receivedInvitation"
+	    android:layout_below="@id/loginButton"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:paddingTop="20dp"
+	    android:textSize="18sp"
+	    android:layout_centerHorizontal="true"
+	    android:text="I have received an invitation"
+	    />    
+    
+</RelativeLayout>
