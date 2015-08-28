@@ -10,11 +10,7 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/EntradaHealth" />
-            <option value="$PROJECT_DIR$/actionbarsherlock" />
-            <option value="$PROJECT_DIR$/library" />
-            <option value="$PROJECT_DIR$/library_pinned_listview" />
-            <option value="$PROJECT_DIR$/vviewpageindicator" />
+            <option value="$PROJECT_DIR$/app" />
           </set>
         </option>
       </GradleProjectSettings>

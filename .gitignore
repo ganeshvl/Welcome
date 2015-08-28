@@ -5,14 +5,3 @@
 .DS_Store
 /build
 /captures
-
-/target
-/.settings
-.metadata
-/android-client-screenshots
-.todo
-bin
-gen
-gradle.properties
-.idea
-*.iml

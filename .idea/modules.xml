@@ -2,12 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/EntradaHealth/EntradaHealth.iml" filepath="$PROJECT_DIR$/EntradaHealth/EntradaHealth.iml" />
-      <module fileurl="file://$PROJECT_DIR$/EntradaHealth-studio.iml" filepath="$PROJECT_DIR$/EntradaHealth-studio.iml" />
-      <module fileurl="file://$PROJECT_DIR$/actionbarsherlock/actionbarsherlock.iml" filepath="$PROJECT_DIR$/actionbarsherlock/actionbarsherlock.iml" />
-      <module fileurl="file://$PROJECT_DIR$/library/library.iml" filepath="$PROJECT_DIR$/library/library.iml" />
-      <module fileurl="file://$PROJECT_DIR$/library_pinned_listview/library_pinned_listview.iml" filepath="$PROJECT_DIR$/library_pinned_listview/library_pinned_listview.iml" />
-      <module fileurl="file://$PROJECT_DIR$/vviewpageindicator/vviewpageindicator.iml" filepath="$PROJECT_DIR$/vviewpageindicator/vviewpageindicator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MyApplication.iml" filepath="$PROJECT_DIR$/MyApplication.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
 </project>
