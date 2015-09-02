@@ -85,13 +85,13 @@ public class JobCountTask extends AsyncTask<Void, Void, List<Job>>{
 		// TODO Auto-generated method stub
 	
 		UserState state = AndroidState.getInstance().getUserState();
-		synchronized (state)
-		{
+		//synchronized (state)
+		//{
 		DomainObjectReader reader = state.getProvider(account);
 		
 		return (reader != null) ? reader.searchJobs("")
 		: ImmutableList.<Job>of();
-		}
+		//}
 	}
 	
 	@Override

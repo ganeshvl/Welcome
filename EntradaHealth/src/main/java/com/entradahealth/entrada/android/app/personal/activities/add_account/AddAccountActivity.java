@@ -7,13 +7,13 @@ import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -29,18 +29,21 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.entradahealth.entrada.android.R;
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
-import com.entradahealth.entrada.android.app.personal.EntradaActivity;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
+import com.entradahealth.entrada.android.app.personal.EntradaFragmentActivity;
 import com.entradahealth.entrada.android.app.personal.Environment;
 import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.UserState;
+import com.entradahealth.entrada.android.app.personal.activities.pin_entry.PinEntryFragment;
 import com.entradahealth.entrada.android.app.personal.activities.settings.EntradaSettings;
 import com.entradahealth.entrada.android.app.personal.utils.TestConnectionTask;
 import com.entradahealth.entrada.core.auth.Account;
@@ -59,7 +62,7 @@ import com.google.common.collect.Lists;
  * @since 27 Sep 2012
  */
 
-public class AddAccountActivity extends EntradaActivity
+public class AddAccountActivity extends EntradaFragmentActivity
 {
     
     private static Button loginButton ;
@@ -73,12 +76,15 @@ public class AddAccountActivity extends EntradaActivity
     public static String selectedEnvironment;
     private TextView receivedInvitation;
     private Context context;
+	private FrameLayout frameLayout;
+	private RelativeLayout addAccountLayout;
+	private boolean launchedRedeemScreen = false;
    
     @Override
     protected void onStart()
     {
         super.onStart();
-
+        launchedRedeemScreen = false; 
         ActionBar ab = getActionBar();
         ab.setTitle(R.string.list_accounts_add_account_button);
         sp = getSharedPreferences("Entrada",
@@ -92,6 +98,8 @@ public class AddAccountActivity extends EntradaActivity
     	super.onCreate(savedInstanceState);
     	setContentView(R.layout.add_account_new);
     	context = this;
+		frameLayout = (FrameLayout) findViewById(R.id.fragcontent);
+		addAccountLayout = (RelativeLayout) findViewById(R.id.addaccntlayout);
     	factory = EnvironmentHandlerFactory.getInstance();
     	uname = getIntent().getStringExtra("user_name");
     	application = (EntradaApplication) EntradaApplication.getAppContext();
@@ -112,7 +120,7 @@ public class AddAccountActivity extends EntradaActivity
 	            Intent intent = new Intent(context, NewUserActivity.class);
 	            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 	            context.startActivity(intent);
-
+	            launchedRedeemScreen = true;
 			}
 		});
     	
@@ -224,7 +232,7 @@ public class AddAccountActivity extends EntradaActivity
 			
 			@Override
 			public boolean onLongClick(View arg0) {
-				FragmentTransaction ft = getFragmentManager().beginTransaction();
+				android.app.FragmentTransaction ft = getFragmentManager().beginTransaction();
 				DialogFragment fragment = MyDialogFragment.newInstance();
 				fragment.show(ft, "dialog");
 				return false;
@@ -480,8 +488,24 @@ public class AddAccountActivity extends EntradaActivity
 	protected void onRestart() {
 		// TODO Auto-generated method stub
 		super.onRestart();
+		if(!launchedRedeemScreen){
+			addAccountLayout.setVisibility(View.GONE);
+			frameLayout.setVisibility(View.VISIBLE);
+			BundleKeys.cur_uname = sp.getString("CUR_UNAME", null);
+			Bundle b = new Bundle();
+			b.putBoolean(BundleKeys.FROM_ADD_ACCOUNT, true);
+			PinEntryFragment pinFragment = new PinEntryFragment();
+			pinFragment.setArguments(b);
+			FragmentTransaction ft = getSupportFragmentManager().beginTransaction().addToBackStack(null);
+			ft.replace(R.id.fragcontent, pinFragment, "pin");
+			ft.commitAllowingStateLoss();
+		}
     }
-	
+
+	public void sucessfulPinEntry(){
+		addAccountLayout.setVisibility(View.VISIBLE);
+		frameLayout.setVisibility(View.GONE);
+	}
     
     @Override
     protected void onStop() {
@@ -494,6 +518,15 @@ public class AddAccountActivity extends EntradaActivity
 	public void onTrimMemory(int level) {
 		super.onTrimMemory(level);
 		finish();
+	}
+
+	@Override
+	public void onBackPressed() {
+		// TODO Auto-generated method stub
+		android.support.v4.app.Fragment pinFragment = getSupportFragmentManager().findFragmentByTag("pin");
+		if(pinFragment==null){
+			super.onBackPressed();
+		}
 	}
 
 }

@@ -1,29 +1,29 @@
 package com.entradahealth.entrada.android.app.personal.activities.inbox.adapters;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-
-import org.acra.ACRA;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+import org.h2.schema.Constant;
 import org.xiph.vorbis.encoder.EncodeFeed;
 import org.xiph.vorbis.encoder.VorbisEncoder;
 
-import android.app.Activity;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnSeekCompleteListener;
@@ -41,10 +41,10 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 import android.widget.RelativeLayout.LayoutParams;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.entradahealth.entrada.android.R;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
@@ -54,14 +54,13 @@ import com.entradahealth.entrada.android.app.personal.activities.inbox.SecureMes
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ChatMessage;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
 import com.entradahealth.entrada.core.auth.User;
-import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.inbox.encryption.AES256Cipher;
-import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
 import com.quickblox.content.QBContent;
 import com.quickblox.core.QBEntityCallbackImpl;
 import com.quickblox.core.QBProgressCallback;
 
 public class ConversationAdapter extends BaseAdapter{
+	private String TAG = this.getClass().getSimpleName();
 	private Context mContext;
 	private List<ChatMessage> mMessages;
 	private LayoutInflater inflater;
@@ -76,6 +75,9 @@ public class ConversationAdapter extends BaseAdapter{
 	private String conversationId;
 	private String passPhrase;
     private AES256Cipher cipher;
+    private Set<String> attachmentIds;
+	private static final String AUDIO_FILE_EXT_M4A = ".m4a";
+	private HashMap<Integer, Boolean> mThreadpool=null;
     
 	public ConversationAdapter(Context context, ArrayList<ChatMessage> messages, String recipient_name, String patient_name, String conversationId, String passPhrase) {
 		super();
@@ -90,6 +92,8 @@ public class ConversationAdapter extends BaseAdapter{
 		this.conversationId = conversationId;
 		this.passPhrase = passPhrase;
 		cipher = new AES256Cipher();
+		attachmentIds = new HashSet<String>();
+		mThreadpool = new HashMap<Integer, Boolean>();
 	}
 	
 	@Override
@@ -133,16 +137,6 @@ public class ConversationAdapter extends BaseAdapter{
 		holder.time = (TextView) view.findViewById(R.id.time);
 		holder.attach_img = (ImageView) view.findViewById(R.id.attach_img);
 		holder.alert = (TextView) view.findViewById(R.id.alert);
-		//holder.attach_img.setTag(mMessages.get(position).getImagePath());
-		/*holder.attach_img.setOnClickListener(new OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				Log.e("sel_img_path", v.getTag().toString());
-			}
-		});*/
-		
 		holder.statusIndicator1 = (ImageView)view.findViewById(R.id.statusIndicator1);
 		holder.status = (TextView) view.findViewById(R.id.status);
 		view.setTag(holder);
@@ -220,7 +214,7 @@ public class ConversationAdapter extends BaseAdapter{
 		} else if(message.getMessageType() == ChatMessage.MSGTYPE_ALERT){
 			holder.alert.setText(message.getMessage());
 		} else if(message.getMessageType() == ChatMessage.MSGTYPE_AUDIO){
-			String audioPath = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId+"/"+message.getAttachmentId()+".ogg";
+			String audioPath = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId+"/"+message.getAttachmentId()+AUDIO_FILE_EXT_M4A;
 			message.setMessage(audioPath);
 			holder.audioMessage.setVisibility(View.VISIBLE);
 			holder.message.setVisibility(View.GONE);
@@ -229,7 +223,14 @@ public class ConversationAdapter extends BaseAdapter{
 			if(file.exists()){
 				loadAudio(holder, message);
 			} else {
-				downloadContent(Integer.valueOf(message.getAttachmentId()), message.getMessageType(), holder, message, position);
+				if(mThreadpool !=null && !(mThreadpool.containsKey(Integer.valueOf(message.getAttachmentId())))){
+					boolean isAddedToTaskpool = mThreadpool.containsValue(Integer.valueOf(message.getAttachmentId()));
+					if(!isAddedToTaskpool &&!file.exists() ){
+					Log.e("Load Audio ", "Called for "+ Integer.valueOf(message.getAttachmentId()));
+					downloadContent(Integer.valueOf(message.getAttachmentId()), message.getMessageType(), holder, message, position);
+					}
+				}
+					
 			}
 		} else if(message.getMessageType() == ChatMessage.MSGTYPE_IMAGE) {
 			holder.audioMessage.setVisibility(View.GONE);
@@ -243,7 +244,9 @@ public class ConversationAdapter extends BaseAdapter{
 				if(file.exists()){
 					renderImageView(holder, message, position, imagePath);
 				} else {
-					downloadContent(Integer.valueOf(message.getAttachmentId()), message.getMessageType(), holder, message, position);
+					if(!attachmentIds.contains(message.getAttachmentId())) {
+						downloadContent(Integer.valueOf(message.getAttachmentId()), message.getMessageType(), holder, message, position);
+					}
 				}
 			} 
 			//holder.attach_img.getLayoutParams().width = req_w;
@@ -274,7 +277,6 @@ public class ConversationAdapter extends BaseAdapter{
 				Bundle b = new Bundle();
 				b.putInt("index", position);
 				b.putString("attachmentId", message.getAttachmentId());
-				b.putString("recipient_name", mMessages.get(position).getSelectedContact());
 				b.putString("patient_name", patient_name);
 				b.putString("conversationId", conversationId);
 				ImageFullscreenView fullScreen = new ImageFullscreenView();
@@ -339,72 +341,87 @@ public class ConversationAdapter extends BaseAdapter{
 		protected void onPostExecute(Object result) {
 			super.onPostExecute(result);
             renderImageView(holder, message, position, imagePath);
+            attachmentIds.remove(String.valueOf(attachmentID));
+		}
+	}
+
+	// TODO - Need to write the download the audio functionality when other users send the audio.
+	class DownloadAudioTask extends AsyncTask{
+		private Bundle params;
+		private int attachmentID, type, position;
+		private ChatMessage message;
+		private ViewHolder holder;
+		private String audioPath;
+
+
+		public DownloadAudioTask(Bundle params, int attachmentID, int type, ViewHolder holder, ChatMessage message, int position){
+			this.params = params;
+			this.attachmentID = attachmentID;
+			this.type = type;
+			this.holder = holder;
+			this.message = message;
+			this.position = position;
+		}
+
+		@Override
+		protected Object doInBackground(Object... params1) {
+			try{
+				File file = new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+				if(!file.exists()) {
+					new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)).mkdir();
+				}
+				file = new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId);
+				if(!file.exists()) {
+					new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId).mkdir();
+				}
+				file = new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId+"/audios");
+				if(!file.exists()) {
+					new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId+"/audios").mkdir();
+				}
+				audioPath = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId+"/audios/"+attachmentID+attachmentID+AUDIO_FILE_EXT_M4A;;
+				Log.e("DownloadAudioTask AudioPath", audioPath.toString());
+
+				byte[] content = params.getByteArray(com.quickblox.core.Consts.CONTENT_TAG);
+				byte[] decrypted = null;
+				Log.e("DownloadAudioTask", "Download Decrypted bytearray--"+content.length);
+				Log.e("DownloadAudioTask", "passPhrase--"+ passPhrase);
+				content = cipher.decrypt(content, passPhrase);
+				decrypted = content;
+				FileOutputStream fos = new FileOutputStream(new File(audioPath));
+				Log.e("Upload byteArray", "Decrepted bytearray--"+decrypted.length);
+				fos.write(decrypted);
+				fos.close();
+				//FileUtils.writeByteArrayToFile(new File(audioPath), decrypted);
+			} catch(Exception e){
+				Log.e("DownloadAudioTask Audio" ,  e.getMessage());
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Object result) {
+			super.onPostExecute(result);
+			//message.setMessage(audioPath);
+			loadAudio(holder, message);
+			notifyDataSetChanged();
 		}
 	}
 	
 	public void downloadContent(final int attachmentID, final int type, final ViewHolder holder, final ChatMessage message, final int position) {
+		attachmentIds.add(String.valueOf(attachmentID));
+		if(type == ENTMessage.AUDIO){
+			mThreadpool.put(attachmentID, true);
+		}
 		QBContent.downloadFileTask(attachmentID, new QBEntityCallbackImpl<InputStream>(){
+			@SuppressWarnings("unchecked")
 		    @Override
 		    public void onSuccess(final InputStream inputStream, Bundle params) {		    	
 				try {
 					if(type == ENTMessage.IMAGE) {
 						new DownloadImageTask(params, attachmentID, type, holder, message, position).execute();
 					} else if(type == ENTMessage.AUDIO){
-/*						File file = new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
-						if(!file.exists()) {
-							new File(User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)).mkdir();
-						}
-						String audioPath = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversationId+"/"+attachmentID+".ogg";
-						final FileOutputStream fos = new FileOutputStream(audioPath);
-						EncodeFeed encodeFeed = new EncodeFeed() {
-							@Override
-							public long readPCMData(byte[] pcmDataBuffer, int amountToWrite) {
-								int read = 0;
-								try {
-									if(inputStream.available()!=0){
-										read = inputStream.read(pcmDataBuffer, 0, amountToWrite);
-									}
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-								return read;
-							}
-
-							@Override
-							public int writeVorbisData(byte[] vorbisData, int amountToRead) {
-								try {
-									fos.write(vorbisData, 0, amountToRead);
-								} catch (IOException e) {
-									e.printStackTrace();
-								} catch (Exception e) {
-									e.printStackTrace();														
-								}
-								return 0;
-							}
-							
-							@Override
-							public void stop() {
-								try {
-									inputStream.close();
-									fos.close();
-									loadAudio(holder, message);
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-							}
-
-							@Override
-							public void stopEncoding() {
-							}
-
-							@Override
-							public void start() {
-								
-							}
-						};
-
-						VorbisEncoder.startEncodingWithBitrate(44100, 1, 68000, encodeFeed);*/
+						mThreadpool.put(attachmentID, true);
+						new DownloadAudioTask(params, attachmentID, type, holder, message, position).execute();
 					}
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
@@ -414,7 +431,10 @@ public class ConversationAdapter extends BaseAdapter{
 
 		    @Override
 		    public void onError(List<String> errors) {
-		 
+		    	attachmentIds.remove(String.valueOf(attachmentID));
+				if(type == ENTMessage.AUDIO){
+					mThreadpool.put(attachmentID, true);
+				}
 		    }
 		    
 		});
@@ -424,7 +444,7 @@ public class ConversationAdapter extends BaseAdapter{
 		try {
 			if(message.getMessage() == null || message.getMessage() == "") {
 				Handler seekHandler = new Handler();
-				//message.setMessage("test.mp3");
+				message.setMessage("test.mp3");
 				holder.playPauseButton.setOnClickListener(new PlayPauseClickListener(holder, message, seekHandler));
 			} else {
 				if(_source == null || !(_source.equals(message.getMessage()))) {
@@ -437,7 +457,7 @@ public class ConversationAdapter extends BaseAdapter{
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void updateMessageView(ChatMessage message, float dpWidth,
 			LayoutParams lp) {
 		lp.setMargins(convertDpToPixel(10), convertDpToPixel(10), convertDpToPixel(30), 0);
@@ -459,7 +479,7 @@ public class ConversationAdapter extends BaseAdapter{
 		}
 		}
 	}
-	
+
 	public void seekUpdation() {
 		if(mediaPlayer.isPlaying()){
 			_holder.playPauseButton.setImageResource(R.drawable.icon_pause);
@@ -468,28 +488,24 @@ public class ConversationAdapter extends BaseAdapter{
 		}
 		int originalSeconds = (int) (mediaPlayer.getCurrentPosition() / 1000.0f);
 		int mins = (int)(originalSeconds/60);
-    	int secs = (int)(originalSeconds%60);
+		int secs = (int)(originalSeconds%60);
 		_holder.audioSeekBar.setProgress(mediaPlayer.getCurrentPosition()); 
-		_holder.timePlayed.setText(String.valueOf(mins) +" : "+ String.valueOf(secs));
+		_holder.timePlayed.setText(String.format("%02d", Integer.parseInt(String.valueOf(mins))) +" : "+ String.format("%02d", Integer.parseInt(String.valueOf(secs))));
 		_seekHandler.postDelayed(new Runnable() {
 			@Override 
 			public void run() {
 				seekUpdation(); 
 			}} , 100); 
 	}
-
 	class PlayPauseClickListener implements OnClickListener{
-
 		private ViewHolder holder;
 		private ChatMessage message;
 		private Handler seekHandler;
-		
 		public PlayPauseClickListener(ViewHolder holder, ChatMessage message, Handler seekHandler) {
 			this.holder = holder;
 			this.message = message;
 			this.seekHandler = seekHandler;
 		}
-		
 		@Override
 		public void onClick(View v) {
 			_holder = holder;
@@ -501,45 +517,43 @@ public class ConversationAdapter extends BaseAdapter{
 				holder.playPauseButton.setImageResource(R.drawable.icon_play);
 				mediaPlayer.pause();
 			} else {
-					mediaPlayer.stop();
-					mediaPlayer.reset();
-					try {
-							if(message.getMessage().contains("mp3")) {
-							AssetFileDescriptor afd = mContext.getAssets().openFd("test.mp3");
-							mediaPlayer.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
-							afd.close();
-						} else {
-							mediaPlayer.setDataSource(message.getMessage());							
-						}
-						seekUpdation();
-					 	mediaPlayer.prepare();
-					} catch (IllegalArgumentException e) {
-						e.printStackTrace();
-					} catch (SecurityException e) {
-						e.printStackTrace();
-					} catch (IllegalStateException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
+				mediaPlayer.stop();
+				mediaPlayer.reset();
+				try {
+					if(message.getMessage().contains("mp3")) {
+						AssetFileDescriptor afd = mContext.getAssets().openFd("test.mp3");
+						mediaPlayer.setDataSource(afd.getFileDescriptor(),afd.getStartOffset(),afd.getLength());
+						afd.close();
+					} else {
+						mediaPlayer.setDataSource(message.getMessage());							
 					}
-					mediaPlayer.setOnSeekCompleteListener(new MPSeekCompletionListner(message));
-					mediaPlayer.seekTo(message.getAudioPosition());
-					holder.audioSeekBar.setMax(mediaPlayer.getDuration());
-					message.setAudioDuration(mediaPlayer.getDuration());
-					message.setAudioPosition(mediaPlayer.getCurrentPosition());					
-					mMessages.set(_position, message);
-					holder.playPauseButton.setImageResource(R.drawable.icon_pause);
-					mediaPlayer.start();				 	
+					seekUpdation();
+					mediaPlayer.prepare();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (SecurityException e) {
+					e.printStackTrace();
+				} catch (IllegalStateException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				mediaPlayer.setOnSeekCompleteListener(new MPSeekCompletionListner(message));
+				mediaPlayer.seekTo(message.getAudioPosition());
+				holder.audioSeekBar.setMax(mediaPlayer.getDuration());
+				message.setAudioDuration(mediaPlayer.getDuration());
+				message.setAudioPosition(mediaPlayer.getCurrentPosition());					
+				mMessages.set(_position, message);
+				holder.playPauseButton.setImageResource(R.drawable.icon_pause);
+				mediaPlayer.start();				 	
 			}
 		}
-		
 	}
-
-    public int convertDpToPixel(float dp) {
-        DisplayMetrics metrics = mContext.getResources().getDisplayMetrics();
-        float px = dp * (metrics.densityDpi / 160f);
-        return (int) px;
-    }
+	public int convertDpToPixel(float dp) {
+		DisplayMetrics metrics = mContext.getResources().getDisplayMetrics();
+		float px = dp * (metrics.densityDpi / 160f);
+		return (int) px;
+	}
 
 	private static class ViewHolder
 	{
@@ -556,6 +570,7 @@ public class ConversationAdapter extends BaseAdapter{
 		ImageView statusIndicator1;
 		TextView alert;
 		TextView status;
+		TextView date;
 	}
 
 	@Override
@@ -569,6 +584,11 @@ public class ConversationAdapter extends BaseAdapter{
 	}
 	
 	public void addMessages(List<ChatMessage> messages){
+		mMessages.addAll(messages);			
+	}
+	
+	public void addMessagesToFirst(List<ChatMessage> messages){
+		mMessages.clear();
 		mMessages.addAll(messages);			
 	}
 

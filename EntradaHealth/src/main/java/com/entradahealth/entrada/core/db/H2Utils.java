@@ -34,7 +34,8 @@ public class H2Utils
             Class.forName("org.h2.Driver");
             StringBuilder sb = new StringBuilder("jdbc:h2:file:")
                     .append(path)
-                    .append(";CIPHER=AES");
+                    .append(";CIPHER=AES")
+                    .append(";FILE_LOCK=NO");
 
             String userPass = password != null ? password + " nopasswd" : "nopasswd";
 

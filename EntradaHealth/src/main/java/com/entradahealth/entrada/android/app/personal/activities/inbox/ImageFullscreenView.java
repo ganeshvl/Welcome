@@ -32,7 +32,7 @@ public class ImageFullscreenView extends Fragment implements OnPageChangeListene
 	File[] acct_folders, recipient_folder, chat_folder, img_folder, imgs;
 	ViewPager mViewPager;
 	CustomPagerAdapter mCustomPagerAdapter;
-	String recipient_name, patient_name, conversationId;
+	String patient_name, conversationId;
 	int index, new_index;
 	String[] arr_img_paths;
 	private String attachmentId;
@@ -52,7 +52,6 @@ public class ImageFullscreenView extends Fragment implements OnPageChangeListene
 		if(bundle != null){
 			index = bundle.getInt("index");
 			patient_name = bundle.getString("patient_name"); 
-			recipient_name = bundle.getString("recipient_name");
 			conversationId = bundle.getString("conversationId");
 			attachmentId = bundle.getString("attachmentId");
 		}
@@ -76,9 +75,9 @@ public class ImageFullscreenView extends Fragment implements OnPageChangeListene
 		super.onStart();
 		EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
 		UserState state = AndroidState.getInstance().getUserState();
-        synchronized (state) {
+//        synchronized (state) {
      	   currentAccount = state.getCurrentAccount();
-        }
+//        }
 		accountName = currentAccount.getName();
 		state = AndroidState.getInstance().getUserState();
 

@@ -9,11 +9,11 @@ import org.jivesoftware.smack.XMPPException;
 
 public interface ChatManager {
 
-    void sendMessage(QBChatMessage message) throws XMPPException, SmackException.NotConnectedException;
+    void sendMessage(QBChatMessage message) throws XMPPException, SmackException.NotConnectedException, IllegalStateException;
 
     void release() throws XMPPException;
 
-	void sendMessage(ENTMessage message) throws NotConnectedException, XMPPException;
+	void sendMessage(ENTMessage message) throws NotConnectedException, XMPPException, IllegalStateException;
 	
 	boolean isJoined();
 }

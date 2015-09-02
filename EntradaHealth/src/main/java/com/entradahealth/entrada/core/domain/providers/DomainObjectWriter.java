@@ -118,4 +118,8 @@ public interface DomainObjectWriter {
 	void deleteResources() throws DomainObjectWriteException;
 	void scheduleInsertUpdate(Schedule schedule);
 
+	void deleteDictator(Dictator dictator);
+
+	void updateDictatorName(long dictatorId, String dictatorName) throws DomainObjectWriteException;
+
 }

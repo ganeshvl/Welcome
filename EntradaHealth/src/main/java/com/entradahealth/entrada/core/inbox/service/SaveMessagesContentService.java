@@ -2,14 +2,11 @@ package com.entradahealth.entrada.core.inbox.service;
 
 import java.util.concurrent.ExecutorService;
 
-import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.core.inbox.dao.ENTHandler;

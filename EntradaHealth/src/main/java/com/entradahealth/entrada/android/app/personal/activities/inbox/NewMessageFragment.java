@@ -9,11 +9,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -25,10 +27,15 @@ import org.xiph.vorbis.recorder.VorbisRecorder;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
+import android.app.NotificationManager;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -36,11 +43,14 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.media.ExifInterface;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Message;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.text.Editable;
@@ -54,11 +64,13 @@ import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
@@ -82,10 +94,9 @@ import com.entradahealth.entrada.android.app.personal.activities.job_display.Sto
 import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.auth.User;
 import com.entradahealth.entrada.core.auth.UserPrivate;
-import com.entradahealth.entrada.core.auth.exceptions.AccountException;
-import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.domain.Encounter;
 import com.entradahealth.entrada.core.domain.Job;
+import com.entradahealth.entrada.core.domain.Job.Flags;
 import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectReader;
@@ -98,9 +109,13 @@ import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectWrite
 import com.entradahealth.entrada.core.inbox.encryption.AES256Cipher;
 import com.entradahealth.entrada.core.inbox.service.ChatManager;
 import com.entradahealth.entrada.core.inbox.service.GroupChatManagerImpl;
+import com.entradahealth.entrada.core.inbox.service.NewConversationBroadcastService;
+import com.entradahealth.entrada.core.inbox.service.PrivateChatManagerImpl;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
+import com.google.common.base.Joiner;
 import com.quickblox.chat.QBChatService;
+import com.quickblox.chat.model.QBChatMessage;
 import com.quickblox.content.QBContent;
 import com.quickblox.content.model.QBFile;
 import com.quickblox.core.QBEntityCallbackImpl;
@@ -129,9 +144,12 @@ public class NewMessageFragment extends Fragment {
 	private int year, mon, day, hr, min;
 	String str_hr, str_min;
 	File[] acct_folders, job_folders, img_folders, saved_images;
-	private VorbisRecorder recorder;
+//	private VorbisRecorder recorder;
+	private String outputFile;
+	private Handler handler;
 	private Handler timerUpdateHandler;
 	private StopWatch stopWatch;
+	private Handler handler_status;
 	ArrayList<String> list_selected_images, list_saved_images;
 	boolean hasImages = false;
 	private ENTConversation conversation;
@@ -144,7 +162,7 @@ public class NewMessageFragment extends Fragment {
 	private boolean canSharePatientClinicalInformation = false;
 	private APIService service;
 	private ImageView ivPatPic;
-	private TextView tvPatName, participantsLeftMsg;
+	private TextView tvPatName, footerMessage;
 	private NewMessageFragment fragment;
 	private SecureMessaging activity;
 	private String passPhrase;
@@ -156,9 +174,20 @@ public class NewMessageFragment extends Fragment {
 	private View mCustomView;
 	private com.entradahealth.entrada.android.app.personal.Environment env;
 	private int recepientsCount = 0;
+	private String[] recipients;
+	private TextView tvRecipient;
+	private UploadImageTask task;
+	private PopupMenu popupMenu;
+	private TextView loadearliermessages;
+	private int messagesCount = 0, offset = 0, previousCount = -1;
 	
 	public static final String GROUP_MESSAGE = "Group Message";
 	public static final String MESSAGE = "Message";
+	private boolean isCreateConversation = false;
+	private boolean isupdateConversation = false;
+	private static final String AUDIO_FILE_EXT_M4A = ".m4a";
+	private MediaRecorder recorder = null;
+	private LinearLayout messageHeader;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -173,24 +202,21 @@ public class NewMessageFragment extends Fragment {
     	activity = (SecureMessaging) getActivity();
     	application = (EntradaApplication) EntradaApplication.getAppContext();
     	state = AndroidState.getInstance().getUserState();
+		LayoutInflater mInflater = LayoutInflater.from(activity);
+		mCustomView = mInflater.inflate(R.layout.acbar_new_msg, null);
+		tvPatName = (TextView)mCustomView.findViewById(R.id.tvPatName);
+		tvRecipient = (TextView)mCustomView.findViewById(R.id.tvRecipient);
+		messageHeader = (LinearLayout) mCustomView.findViewById(R.id.layout_pat_reci_info);
+		TextView tvabTitle = (TextView)mCustomView.findViewById(R.id.tvabTitle);
+		ivPatPic = (ImageView)mCustomView.findViewById(R.id.ivPatImage);
 		try {
 			EnvironmentHandlerFactory envFactory = EnvironmentHandlerFactory.getInstance();
 			env = envFactory.getHandler(application.getStringFromSharedPrefs("environment"));
 			service = new APIService(env.getApi());
-			state.setSMUser();
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (DomainObjectWriteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (AccountException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidPasswordException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} 
     	writer = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
     	smReader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
 		if(bundle != null){
@@ -208,6 +234,7 @@ public class NewMessageFragment extends Fragment {
 		}
 		
 		if(recipientId != null || contacts != null) {
+			isCreateConversation = true;
 	        if(contacts!=null) {
 	    		StringBuffer buffer = new StringBuffer();
 	    		recepientsCount = contacts.size();
@@ -219,15 +246,14 @@ public class NewMessageFragment extends Fragment {
 	    		}
 	    		recipient_name = buffer.toString();
 	        }
-			CreateNewDialogTask task = new CreateNewDialogTask();
-			task.execute();
+
 		} 
 
 		BundleKeys.isFront = true;
 		messages = new ArrayList<ChatMessage>();
 				
 		if(conversation != null) {
-			String[] recipients = removeElements(conversation.getOccupantsIds(), application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID));
+			recipients = removeElements(conversation.getOccupantsIds(), application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID));
 			StringBuffer buffer = new StringBuffer();
 			recepientsCount = recipients.length;
 			if(recepientsCount>0){
@@ -239,21 +265,17 @@ public class NewMessageFragment extends Fragment {
 			}
 			patient_id = conversation.getPatientID();
 			recipient_name = buffer.toString();
-			UpdateDialogTask task = new UpdateDialogTask();
-			task.execute();
+			isupdateConversation = true;
 		}
-        synchronized (state) {
+        //synchronized (state) {
      	   currentAccount = state.getCurrentAccount();
-        }
+        //}
 		
 		if(patient_id != 0){
 			Log.e("patient_id", Long.toString(patient_id));
 			if(patient_name == null) {
-				if(currentAccount != null) {
-		            DomainObjectReader reader = state.getProvider(currentAccount);
-					Patient patient = reader.getPatient(patient_id);
-					patient_name = (patient!=null) ? patient.getFirstName() + " " + patient.getLastName() : "Loading Patient..";
-				}
+				Patient patient = smReader.getPatient(patient_id);
+				patient_name = (patient!=null) ? patient.getFirstName() + " " + patient.getLastName() : "Loading Patient..";
 			}
 			getImagesPath();
 		}
@@ -271,19 +293,11 @@ public class NewMessageFragment extends Fragment {
         if(!imagePath.exists())
      	   imagePath.mkdirs();
         
-
-		LayoutInflater mInflater = LayoutInflater.from(activity);
-		mCustomView = mInflater.inflate(R.layout.acbar_new_msg, null);
-		tvPatName = (TextView)mCustomView.findViewById(R.id.tvPatName);
-		TextView tvRecipient = (TextView)mCustomView.findViewById(R.id.tvRecipient);
-		TextView tvabTitle = (TextView)mCustomView.findViewById(R.id.tvabTitle);
-		ivPatPic = (ImageView)mCustomView.findViewById(R.id.ivPatImage);
-
 		tvPatName.setSelected(true);
 		tvRecipient.setSelected(true);
 		tvPatName.setText(patient_name);
 		tvRecipient.setText(recipient_name);
-		
+		messageHeader.setOnClickListener(new GroupInfoClickListener());
 		tvabTitle.setOnClickListener(new OnClickListener() {
 			
 			@Override
@@ -297,8 +311,13 @@ public class NewMessageFragment extends Fragment {
 				}
 			}
 		});
-		if((conversation!=null && conversation.getUserId()!=null && conversation.getUserId().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID))) || patient_id!=0){
+		if((conversation!=null && conversation.getUserId()!=null && conversation.getUserId().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID))) || patient_id!=0 || contacts!=null){
 			ivPatPic.setVisibility(View.VISIBLE);
+			if(patient_id!=0){
+				ivPatPic.setImageResource(R.drawable.pat_photo);
+			} else {
+				ivPatPic.setImageResource(R.drawable.patient_conversation_no_photo_icon);
+			}
 		} else {
 			ivPatPic.setVisibility(View.GONE);
 		}
@@ -308,17 +327,23 @@ public class NewMessageFragment extends Fragment {
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				if(application.is3GOr4GConnected() || application.isWifiConnected()) {
+				if((application.is3GOr4GConnected() || application.isWifiConnected()) && !isCreateConversation) {
 					Bundle b = new Bundle();
-					if(patient_id == 0){
-		        		b.putString("patient_name", patient_name);
-		        		b.putString("recipient_name", recipient_name);
-		        		b.putSerializable("conversation", conversation);
-						PatientSearchFrament patSearch = new PatientSearchFrament(chat);
-						patSearch.setArguments(b);
-						FragmentTransaction ft = activity.getFragmentManager().beginTransaction().addToBackStack(null);
-		        		ft.replace(R.id.fragcontent, patSearch, null);
-		        		ft.commit();
+					if(patient_id == 0 && BundleKeys.openPatientSearch){
+						if(recepientsCount==0) {
+							return;
+						}
+						Fragment fragment = activity.getFragmentManager().findFragmentByTag("patSearch");
+						if(fragment == null) {
+			        		b.putString("patient_name", patient_name);
+			        		b.putString("recipient_name", recipient_name);
+			        		b.putSerializable("conversation", conversation);
+							PatientSearchFrament patSearch = new PatientSearchFrament(chat);
+							patSearch.setArguments(b);
+							FragmentTransaction ft = activity.getFragmentManager().beginTransaction().addToBackStack(null);
+			        		ft.replace(R.id.fragcontent, patSearch, "patSearch");
+			        		ft.commit();
+						}
 					} else {
 						b.putSerializable("conversation", conversation);
 						b.putLong("patient_id", patient_id);
@@ -346,7 +371,100 @@ public class NewMessageFragment extends Fragment {
 		if(recipient_name != null) {
 			tvRecipient.setText(recipient_name);
 		}
+    	activity.registerReceiver(broadcastReceiver, new IntentFilter("CONNECTIVITY_CHANGED"));
     }
+    
+	class GroupInfoClickListener implements OnClickListener{
+
+		@Override
+		public void onClick(View arg0) {
+			// TODO Auto-generated method stub
+			ParticipantsGroupInfoFragment groupInfoFragment = new ParticipantsGroupInfoFragment(conversation, tvPatName.getText().toString());
+			FragmentTransaction ft = activity.getFragmentManager().beginTransaction().addToBackStack(null);
+    		ft.replace(R.id.fragcontent, groupInfoFragment, "groupInfo");
+    		ft.commit();
+		}
+    	
+    }
+    
+    private BroadcastReceiver conbroadcastReceiver = new BroadcastReceiver() {
+	    @Override
+	    public void onReceive(Context context, Intent intent) {
+			new GetMessagesTask().execute();
+			try {
+			getActivity().unregisterReceiver(conbroadcastReceiver);
+			} catch(Exception e){
+				e.printStackTrace();
+			}
+	    }
+	};
+	
+    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+    		try {
+    			setFooter();
+				getActivity().registerReceiver(conbroadcastReceiver, new IntentFilter(NewConversationBroadcastService.BROADCAST_ACTION));
+    		} catch (Exception ex) {
+    			ex.printStackTrace();
+    		}
+        }
+        
+    	protected void setFooter(){
+    		if(recepientsCount == 0){
+    			footerMessage.setText(getResources().getString(R.string.participants_left_msg));
+                updateFooter();
+    		} else if(!application.isWifiConnected() && !application.is3GOr4GConnected()){
+    			footerMessage.setText(getResources().getString(R.string.offline_message));
+                updateFooter();
+    		} else {
+    			footerMessage.setVisibility(View.GONE);
+                btnAttachContent.setVisibility(View.VISIBLE);
+                etMessage.setVisibility(View.VISIBLE);
+                etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+                etMessage.requestFocus();
+                etMessage.setOnClickListener(new OnClickListener() {
+					
+					@Override
+					public void onClick(View arg0) {
+					    lvChatList.post(new Runnable() {
+					        @Override
+					        public void run() {
+					            // Select the last row so it will scroll into view...
+								lvChatList.requestFocusFromTouch();
+					        	lvChatList.setSelection(adapter.getCount() - 1);
+					        }
+					    });
+
+					}
+				});
+                btnSend.setVisibility(View.GONE);
+                tvDuration.setVisibility(View.GONE);
+                btnRecordAudio.setVisibility(View.VISIBLE);
+    		}
+    	}
+
+    	protected void updateFooter() {
+    		footerMessage.setVisibility(View.VISIBLE);
+    		btnAttachContent.setVisibility(View.GONE);
+    		etMessage.setVisibility(View.GONE);
+    		btnSend.setVisibility(View.GONE);
+    		tvDuration.setVisibility(View.GONE);
+    		btnRecordAudio.setVisibility(View.GONE);
+    		InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+    		View view = activity.getCurrentFocus();
+    		imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    	}
+
+    };
+
+	@Override
+	public void onDetach() {
+		// TODO Auto-generated method stub
+		super.onDetach();
+		activity.unregisterReceiver(broadcastReceiver);
+	}
+
     
     class SendPatientAccessTask extends AsyncTask{
 
@@ -398,26 +516,38 @@ public class NewMessageFragment extends Fragment {
 		}
     	
     }
-
     
     class CreateNewDialogTask extends AsyncTask<Void, Void, Void> {
 
+    	@Override
+    	protected void onPreExecute() {
+    		// TODO Auto-generated method stub
+    		super.onPreExecute();
+    		try{
+				footerMessage.setText(getResources().getString(R.string.creating_message));
+	            updateFooter();
+    		} catch(Exception ex){
+    		}
+    	}
+    	
 		@Override
 		protected Void doInBackground(Void... arg0) {
 			try {
 				ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBCONVERSATION);
 				ENTMessage message = new ENTMessage();
-				List<String> recipients = new ArrayList<String>();
+				List<String> recipientslst = new ArrayList<String>();
 				if(contacts!=null) {
 					for(Contact con : contacts){
-						recipients.add(con.getContactNo()); 
+						recipientslst.add(con.getContactNo()); 
 					}
 				} else if(recipientId != null){
-					recipients.add(recipientId);
+					recipientslst.add(recipientId);
 				}
-				String[] _recipients = new String[recipients.size()];
- 				message.setRecipients(recipients.toArray(_recipients));
+				String[] _recipients = new String[recipientslst.size()];
+ 				message.setRecipients(recipientslst.toArray(_recipients));
+ 				recipients = recipientslst.toArray(_recipients);
 				conversation = ((ENTQBConversationHandler) handler).createDialog(message);
+				writer.addConversation(conversation, false);
 				passPhrase = service.createThread(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation.getId());
 				conversation.setPassPhrase(passPhrase);
 			}  catch (Exception e) {
@@ -430,51 +560,101 @@ public class NewMessageFragment extends Fragment {
 		@Override
 		protected void onPostExecute(Void result) {
 			super.onPostExecute(result);
+    		try{
+				footerMessage.setText(getResources().getString(R.string.creating_message));
+	            updateFooter();
+    		} catch(Exception ex){
+    		}
 			if(application.is3GOr4GConnected() || application.isWifiConnected()){
+				createPrivateConversations(conversation);
 				try{
-					Log.e("", "conversation.getXmpp_room_jid()--"+conversation.getXmpp_room_jid());
+					Log.e(TAG, "conversation.getXmpp_room_jid()--"+conversation.getXmpp_room_jid());
 		            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
 		                @Override
 		                public void onSuccess() {
+		        			sendConvCreateMessage();
 		                }
 		
 		                @Override
 		                public void onError(List list) {
+	    					AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+	    			        builder.setTitle("Conversation failed");
+	    			        builder.setMessage("Failed to create conversation. Please try after sometime.");
+	    			        builder.setPositiveButton("OK", null);
+	    			        builder.show();
 		                }
 		            });
 				} catch(Exception ex){
-					conversation = smReader.getConversationById(conversation.getId());
-					Log.e("", "conversation.getXmpp_room_jid()--"+conversation.getXmpp_room_jid());
+					try{
+						conversation = smReader.getConversationById(conversation.getId());
+						Log.e(TAG, "conversation.getXmpp_room_jid()--"+conversation.getXmpp_room_jid());
+						chat = new GroupChatManagerImpl(fragment);
 		            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
 		                @Override
 		                public void onSuccess() {
+		        			sendConvCreateMessage();
 		                }
 		
 		                @Override
 		                public void onError(List list) {
+	    					AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+	    			        builder.setTitle("Conversation failed");
+	    			        builder.setMessage("Failed to create conversation. Please try after sometime.");
+	    			        builder.setPositiveButton("OK", null);
+	    			        builder.show();
 		                }
 		            });
+					} catch(Exception exception){
+						exception.printStackTrace();
+					}
 				}
 			}
-			if((conversation!=null && conversation.getUserId()!=null && conversation.getUserId().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID))) || patient_id!=0){
+			if((conversation!=null && conversation.getUserId()!=null && conversation.getUserId().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID))) || patient_id!=0 || contacts!=null){
 				ivPatPic.setVisibility(View.VISIBLE);
+				if(patient_id!=0){
+					ivPatPic.setImageResource(R.drawable.pat_photo);
+				} else {
+					ivPatPic.setImageResource(R.drawable.patient_conversation_no_photo_icon);
+				}
 			} else {
 				ivPatPic.setVisibility(View.GONE);
 			}		
 	       	adapter = new ConversationAdapter(activity, messages, recipient_name, patient_name, conversation.getId(), passPhrase);
 	       	lvChatList.setAdapter(adapter);
+
     		StringBuffer buffer = new StringBuffer();
     		for (int i = 0; i < contacts.size(); i++) {
     			buffer.append(contacts.get(i).getContactName()+",");
     		}
     		recipient_name = (buffer.length()>0)? buffer.substring(0, buffer.length()-1) : "";
 
-			sendConvCreateMessage();
 			BundleKeys.CURRENT_CONVERSATION = conversation;
+			new MarkMessagesAsReadLocally(conversation.getId()).execute();
+		}
+		
+		private void createPrivateConversations(ENTConversation conversation){
+			String[] occupantIds = conversation.getOccupantsIds();
+			for(String occupantId : occupantIds){
+				try {
+					PrivateChatManagerImpl privateChat = new PrivateChatManagerImpl(Integer.valueOf(occupantId));
+					QBChatMessage chatMessage = new QBChatMessage();
+					chatMessage.setBody("Welcome");
+					chatMessage.setProperty("save_to_history", "1");
+					chatMessage.setProperty("notification_type", "1");
+					chatMessage.setProperty("_id", conversation.getId());
+					chatMessage.setProperty("xmpp_room_jid", conversation.getXmpp_room_jid());
+					String str = Joiner.on(",").skipNulls().join(occupantIds).replace(",", ",");
+					chatMessage.setProperty("occupants_ids", str);
+					privateChat.sendMessage(chatMessage);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 
 		private void sendConvCreateMessage() {
-			ENTMessage entmessage = new ENTMessage();
+			final ENTMessage entmessage = new ENTMessage();
 			ENTUser user = getENTUserFromId(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID));
 			entmessage.setMessage("Conversation started by "+user.getName()+" with "+recipient_name);
 			entmessage.setCustomString("1");
@@ -483,12 +663,28 @@ public class NewMessageFragment extends Fragment {
 			entmessage.setPassPhrase(passPhrase);
 			try {
 				chat.sendMessage(entmessage);
-			} catch (NotConnectedException e) {
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (XMPPException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try{
+		            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
+		                @Override
+		                public void onSuccess() {
+		                	try {
+								chat.sendMessage(entmessage);
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} 
+		                }
+		
+		                @Override
+		                public void onError(List list) {
+		                }
+		            });
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
+
 			}
 	        if(!conversation.getPatientAccess())
 		    {
@@ -518,9 +714,33 @@ public class NewMessageFragment extends Fragment {
 			super.onPostExecute(result);
 	       	adapter = new ConversationAdapter(activity, messages, recipient_name, patient_name, conversation.getId(), passPhrase);
 	       	lvChatList.setAdapter(adapter);
+	       	lvChatList.setOnScrollListener(new OnScrollListener() {
+        		
+				@Override
+				public void onScrollStateChanged(AbsListView arg0, int arg1) {
+					// TODO Auto-generated method stub
+				}
+				
+				@Override
+				public void onScroll(AbsListView view, int firstVisibleItem,
+						int visibleItemCount, int totalItemCount) {
+					if(adapter != null && firstVisibleItem ==0 && adapter.getCount() < messagesCount) {
+						loadearliermessages.setVisibility(View.VISIBLE);
+					} else {
+						loadearliermessages.setVisibility(View.GONE);
+					}
+					if(firstVisibleItem + visibleItemCount == totalItemCount) {
+						lvChatList.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
+					} else {
+						lvChatList.setTranscriptMode(ListView.TRANSCRIPT_MODE_DISABLED);
+					}
+				}
+			});
+
 			BundleKeys.CURRENT_CONVERSATION = conversation;
 			GetMessagesTask task = new GetMessagesTask();
 			task.execute();
+			isupdateConversation = false;
 		}		
 	}
 	public String getTimeStamp() {
@@ -541,30 +761,139 @@ public class NewMessageFragment extends Fragment {
     	btnAttachContent = (Button) view.findViewById(R.id.btnattach);
     	btnRecordAudio = (Button) view.findViewById(R.id.btnrecordaudio);
     	tvDuration = (TextView)view.findViewById(R.id.tvRecDuration);
-		participantsLeftMsg = (TextView) view.findViewById(R.id.participantsLeftMsg);
-		
-	    lvChatList.setOnItemClickListener(new OnItemClickListener() {
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id) {
-				// TODO Auto-generated method stub
-				ChatMessage cMsg = (ChatMessage)lvChatList.getItemAtPosition(position);
-				if(cMsg.getMessageType() == 1)
-					Log.e("sel_img_path", cMsg.getImagePath());
-				
+    	footerMessage = (TextView) view.findViewById(R.id.footerMessage);
+    	loadearliermessages = (TextView) view.findViewById(R.id.loadearliermessages);
+		try{
+			if(isCreateConversation){
+				footerMessage.setText(getResources().getString(R.string.creating_message));
+	            updateFooter();
 			}
-	    	
+		} catch(Exception ex){
+			ex.printStackTrace();
+		}
+    	loadearliermessages.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				new LoadMessagesTask().execute();
+			}
 		});
-	    
-	    //final List<ChatMessage> received = getRecepientData();
-    	btnSend.setOnClickListener(new OnClickListener() {
+    	
+// Commenting this out as the Audio Message is not supported in CC.4. Uncomment this in D release.    	
+    	etMessage.addTextChangedListener(new TextWatcher() {
+
+    	      @Override
+    	      public void onTextChanged(CharSequence s, int start, int before, int count) {
+    	    	  if(s.toString().trim().equals("") || s.length()==0) {
+    	    		  btnRecordAudio.setVisibility(View.VISIBLE);
+    	    		  btnSend.setVisibility(View.GONE);
+    	    	  } else {
+    	    		  btnRecordAudio.setVisibility(View.GONE);
+    	    		  btnSend.setVisibility(View.VISIBLE);
+    	    	  }
+    	      }
+
+    	      @Override
+    	      public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+    	      }
+
+    	      @Override
+    	      public void afterTextChanged(Editable arg0) {
+    	      }
+    	      
+    	    });
+    	
+    	
+    	
+ 	//Listener for mic release to stop recording
+    	btnRecordAudio.setOnTouchListener(new OnTouchListener() {
+			
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				// TODO Auto-generated method stub
+				if (event.getAction() == MotionEvent.ACTION_UP) {
+					btnAttachContent.setVisibility(View.VISIBLE);
+		            etMessage.setVisibility(View.VISIBLE);
+		            tvDuration.setVisibility(View.GONE);
+			        
+			        try{
+			        if (null != recorder) {
+						recorder.stop();
+						recorder.reset();
+						recorder.release();
+						recorder = null;
+					}
+			        stopWatch.stop();
+			        uploadAudio(outputFile);
+			        }catch (IllegalStateException e) {
+					}
+			        
+					outputFile = null;
+	    	    	handler_status = new Handler();
+	    	    	handler_status.postDelayed(runnable, 3000);
+	    	    	scrollListViewToBottom();
+			    } else if(event.getAction() == MotionEvent.ACTION_DOWN){
+			    	Vibrator vb = (Vibrator)activity.getSystemService(Context.VIBRATOR_SERVICE);
+		            vb.vibrate(100);
+		            stopWatch = new StopWatch();
+		            //Hide Attach, Msg, Send view & Make duration tv visible
+		            btnAttachContent.setVisibility(View.GONE);
+		            etMessage.setVisibility(View.GONE);
+		            btnSend.setVisibility(View.GONE);
+		            tvDuration.setVisibility(View.VISIBLE);
+		            setHandler();
+		            timerUpdation();
+		            DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+		            outputFile = audioPath.getAbsolutePath() + "/AUD_"+dateFormat.format(new Date())+AUDIO_FILE_EXT_M4A;
+//		            recorder = new VorbisRecorder(new File(outputFile), handler);
+//			        recorder.start(44100, 1, 68000);	
+		            	
+		        		recorder = new MediaRecorder();
+		        		recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+		        		if (Build.VERSION.SDK_INT >= 10) {
+		        		    recorder.setAudioSamplingRate(44100);
+		        		    recorder.setAudioEncodingBitRate(96000);
+		        		    recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+		        		    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+		        		} else {
+		        		    // older version of Android, use crappy sounding voice codec
+		        		    recorder.setAudioSamplingRate(8000);
+		        		    recorder.setAudioEncodingBitRate(12200);
+		        		    recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+		        		    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+		        		}
+		        		recorder.setOutputFile(outputFile);
+		        		try {
+		        			recorder.prepare();
+		        			recorder.start();
+		        		} catch (IllegalStateException e) {
+		        			e.printStackTrace();
+		        		} catch (IOException e) {
+		        			e.printStackTrace();
+		        		}
+		        		stopWatch.start();
+			    }
+				return true;
+			}
+		});
+    	
+    	if(isCreateConversation){
+    		CreateNewDialogTask task = new CreateNewDialogTask();
+			task.execute();
+    	}
+    	if(isupdateConversation) {
+			UpdateDialogTask task = new UpdateDialogTask();
+			task.execute();
+    	}
+
+		btnSend.setOnClickListener(new OnClickListener() {
 			
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
 				if(application.is3GOr4GConnected() || application.isWifiConnected()) {
-					if(etMessage.getText().toString()!=null && !etMessage.getText().toString().isEmpty()){
+					if(etMessage.getText().toString()!=null && !etMessage.getText().toString().isEmpty() && etMessage.getText().toString().trim().length()>0 && !isCreateConversation){
 						String str = etMessage.getText().toString().trim();
 						String newString = etMessage.getText().toString().trim();
 						try {
@@ -582,75 +911,14 @@ public class NewMessageFragment extends Fragment {
 			}
 		});
     	
-    	
-    	
-    	etMessage.addTextChangedListener(new TextWatcher() {
-
-    	      @Override
-    	      public void onTextChanged(CharSequence s, int start, int before, int count) {
-    	    	  if(s.toString().trim().equals("") || s.length()==0) {
-    	    		  btnRecordAudio.setVisibility(View.VISIBLE);
-    	    		  btnSend.setVisibility(View.GONE);
-    	    	  } else {
-    	    		  btnRecordAudio.setVisibility(View.GONE);
-    	    		  btnSend.setVisibility(View.VISIBLE);
-    	    	  }
-    	      }
-
-    	      @Override
-    	      public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-    	    	  
-    	      }
-
-    	      @Override
-    	      public void afterTextChanged(Editable arg0) {
-    	    	  
-    	      }
-    	      
-    	    });
-    	
-    	
-    	
-    	//Listener for mic release to stop recording
-    	btnRecordAudio.setOnTouchListener(new OnTouchListener() {
-			
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				// TODO Auto-generated method stub
-				if (event.getAction() == MotionEvent.ACTION_UP) {
-					btnAttachContent.setVisibility(View.VISIBLE);
-		            etMessage.setVisibility(View.VISIBLE);
-		            tvDuration.setVisibility(View.GONE);
-			        //uploadAudio(outputFile);
-					if (recorder != null && recorder.isRecording()) {
-						 recorder.stop();
-				    }
-	    	    	scrollListViewToBottom();
-			    } else if(event.getAction() == MotionEvent.ACTION_DOWN){
-			    	Vibrator vb = (Vibrator)activity.getSystemService(Context.VIBRATOR_SERVICE);
-		            vb.vibrate(100);
-		            stopWatch = new StopWatch();
-		            //Hide Attach, Msg, Send view & Make duration tv visible
-		            btnAttachContent.setVisibility(View.GONE);
-		            etMessage.setVisibility(View.GONE);
-		            btnSend.setVisibility(View.GONE);
-		            tvDuration.setVisibility(View.VISIBLE);
-		            timerUpdation();
-			    }
-				return true;
-			}
-		});
-    	
- 
-    
-    	//Attachment for message
+     	//Attachment for message
     	btnAttachContent.setOnClickListener(new OnClickListener() {
 			
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				if(application.is3GOr4GConnected() || application.isWifiConnected()) {
-					PopupMenu popupMenu = new PopupMenu(activity, v);
+				if((application.is3GOr4GConnected() || application.isWifiConnected()) && !isCreateConversation) {
+					popupMenu = new PopupMenu(activity, v);
 					popupMenu.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 						
 						@Override
@@ -672,6 +940,7 @@ public class NewMessageFragment extends Fragment {
 							        		b.putString("patient_name", patient_name);
 							        		b.putString("recipient_name", recipient_name);
 							        		b.putLong("patient_id", patient_id);
+							        		conversation.setPatientID(patient_id);
 							        		b.putSerializable("conversation", conversation);
 											ChooseImagesFragment imgFrag = new ChooseImagesFragment();
 											imgFrag.setArguments(b);
@@ -781,7 +1050,7 @@ public class NewMessageFragment extends Fragment {
 					if(isGrant) {
 						statusCode = service.grantPatienInfoSharingPermission(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation);
 						if(statusCode == 200){
-							message = "You have been Granted Access to the Patients Clinical Data";
+							message = "You have been Granted Access to the Patient's Clinical Data";
 							canSharePatientClinicalInformation = true;
 						} else {
 							canSharePatientClinicalInformation = false;
@@ -790,7 +1059,7 @@ public class NewMessageFragment extends Fragment {
 					} else {
 						statusCode = service.revokePatienInfoSharingPermission(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation);
 						if(statusCode == 200){
-							message = "Access to the Patients Clinical Data has now been Revoked.";
+							message = "Access to the Patient's Clinical Data has now been Revoked.";
 							canSharePatientClinicalInformation = false;
 						} else {
 							canSharePatientClinicalInformation = true;
@@ -856,30 +1125,59 @@ public class NewMessageFragment extends Fragment {
 
     	private ChatMessage message;
     	private ENTMessage entmessage;
+    	private ChatManager chatManager;
+    	private ENTConversation con;
     	
     	public SendMessageTask(ChatMessage message) {
     		this.message = message;
+    		this.chatManager = chat;
+    		this.con = conversation;
+		}
+    	
+    	public SendMessageTask(ChatMessage message, ChatManager chat, ENTConversation conversation) {
+    		this.message = message;
+    		this.chatManager = chat;
+    		this.con = conversation;
 		}
     	
     	@Override
     	protected void onPreExecute() {
     		// TODO Auto-generated method stub
     		super.onPreExecute();
-    		btnSend.setClickable(false);
+    		try {
+	    		btnSend.setClickable(false);
+	    		//etMessage.setHint(getResources().getString(R.string.sendingmessage));
+    			footerMessage.setText(getResources().getString(R.string.sendingmessage));
+                updateFooter();
+    		} catch(Exception ex){
+    		}
     	}
     	
 		@Override
 		protected Void doInBackground(Void... arg0) {
 			try {
 				entmessage = new ENTMessage();
-				entmessage.setChatDialogId(conversation.getId());
+				entmessage.setChatDialogId(con.getId());
 				entmessage.setAttachmentID(message.getAttachmentId());
 				entmessage.setContentType(message.getMessageType());
 				entmessage.setMessage(message.getMessage());
 				entmessage.setPassPhrase(passPhrase);
-				chat.sendMessage(entmessage);
+				chatManager.sendMessage(entmessage);
 			}  catch (Exception e) {
-				e.printStackTrace();
+				try{
+		            ((GroupChatManagerImpl) chatManager).joinGroupChat(conversation, new QBEntityCallbackImpl() {
+		                @Override
+		                public void onSuccess() {
+							new SendMessageTask(message, chatManager, conversation).execute();
+		                }
+		
+		                @Override
+		                public void onError(List list) {
+		                }
+		            });
+				} catch(Exception ex) {
+					ex.printStackTrace();
+				}
 			}
 			return null;
 		}
@@ -887,21 +1185,115 @@ public class NewMessageFragment extends Fragment {
 		@Override
 		protected void onPostExecute(Void result) {
 			super.onPostExecute(result);
-			etMessage.setText("");
-			btnSend.setClickable(true);
-
+			try {
+				etMessage.setText("");
+				btnSend.setClickable(true);
+			} catch(Exception ex){
+			}
 		}		
 	}
         
+    class LoadMessagesTask extends AsyncTask{
+    
+    	private List<ENTMessage> _messagesList;
+    	private int limit = 0;
+    	private ProgressDialog dialog;
+    	
+    	public LoadMessagesTask() {
+			// TODO Auto-generated constructor stub
+    		dialog = new ProgressDialog(getActivity());
+    		dialog.setCancelable(false);
+		}
+    	
+    	@Override
+    	protected void onPreExecute() {
+    		// TODO Auto-generated method stub
+    		super.onPreExecute();
+    		if(dialog != null){
+				dialog.show();
+				dialog.setContentView(R.layout.progress_spinner_only);
+    		}
+    	}
+    	
+		@Override
+		protected Object doInBackground(Object... params) {
+			try {
+				ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBMESSAGE);
+				messagesCount = ((ENTQBMessageHandler) handler).getMessagesCount(conversation);
+				offset = ((offset - BundleKeys.SM_MESSAGES_SHOW_ONSCROLL) > 0) ? (offset - BundleKeys.SM_MESSAGES_SHOW_ONSCROLL) : 0;
+				limit = messagesCount-offset;
+				_messagesList = ((ENTQBMessageHandler) handler).getMessages(conversation, offset, limit);
+			}  catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(Object result) {
+			// TODO Auto-generated method stub
+			super.onPostExecute(result);
+			List<ChatMessage> _messages = new ArrayList<ChatMessage>();
+			for (ENTMessage message : _messagesList) {
+				boolean isMine = (message.getSender().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID)))? true : false;
+				ChatMessage chatMessage = new ChatMessage(message.getMessage(), isMine);
+				chatMessage.setRead(message.isRead());
+				chatMessage.setMessageType(message.getContentType());
+				chatMessage.setAttachmentId(message.getAttachmentID());
+				if(conversation.getOccupantsIds().length>2){
+					chatMessage.setGroup(true);
+				}
+				if(message.getPatientID()!=0 && (tvPatName.getText().equals(MESSAGE) || tvPatName.getText().equals(GROUP_MESSAGE))){
+					patient_id = message.getPatientID();
+					new GetPatientDemographics().execute();
+				}
+				new UpdateLastMessage(message).execute();
+
+				ENTUser user = getENTUserFromId(message.getSender());
+				chatMessage.setFromContact(user!=null? user.getName() : message.getSender());
+				chatMessage.setMessageTime(new Date(message.getSentDate()*1000));
+				_messages.add(chatMessage);
+			}
+			adapter.addMessagesToFirst(_messages);
+			adapter.notifyDataSetChanged();
+			lvChatList.requestFocusFromTouch();
+			lvChatList.setSelection(limit-previousCount);
+			previousCount = _messages.size();
+			if(dialog != null){
+				if(dialog.isShowing()){
+				dialog.dismiss();
+				}
+			}
+
+		}
+    	
+    }
+    
 	class GetMessagesTask extends AsyncTask<Void, Void, Void> {
 		
 		private List<ENTMessage> _messagesList;
 		
 		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+			footerMessage.setText("Loading..");
+            updateFooter();
+		}
+		
+		@Override
 		protected Void doInBackground(Void... arg0) {
 			try {
 				ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBMESSAGE);
-				_messagesList = ((ENTQBMessageHandler) handler).getMessages(conversation);
+				messagesCount = ((ENTQBMessageHandler) handler).getMessagesCount(conversation);
+				if(messagesCount==0){
+					if(application.is3GOr4GConnected() || application.isWifiConnected()) {
+						ENTQBConversationHandler cHandler = (ENTQBConversationHandler) handlerFactory.getHandler(ENTHandlerFactory.QBCONVERSATION);
+						cHandler.saveMessages(conversation, true, false);
+					}
+				}
+				offset = ((messagesCount - BundleKeys.SM_MESSAGES_SHOW_ONSCROLL) > 0) ? (messagesCount - BundleKeys.SM_MESSAGES_SHOW_ONSCROLL) : 0;
+				_messagesList = ((ENTQBMessageHandler) handler).getMessages(conversation, offset, BundleKeys.SM_MESSAGES_SHOW_ONSCROLL);
 			}  catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -911,6 +1303,9 @@ public class NewMessageFragment extends Fragment {
 		@Override
 		protected void onPostExecute(Void result) {
 			super.onPostExecute(result);
+			try {
+			etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+			setFooterWithEditText();
 			List<ChatMessage> _messages = new ArrayList<ChatMessage>();
 			for (ENTMessage message : _messagesList) {
 				boolean isMine = (message.getSender().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID)))? true : false;
@@ -934,25 +1329,45 @@ public class NewMessageFragment extends Fragment {
 				BundleKeys.LASTMESSAGETIME = message.getSentDate();
 				BundleKeys.LASTMESSAGEID = message.getId();
 			}
+			previousCount = _messages.size();
 			adapter.addMessages(_messages);
 			adapter.notifyDataSetChanged();
 			scrollListViewToBottom();
 	        if(list_selected_images != null && list_selected_images.size() > 0){
 	      	   for(int i=0;i<list_selected_images.size();i++){
-	      		 new UploadImageTask(list_selected_images.get(i), false).execute();
+	      		 new ImageCompressionAsyncTask(list_selected_images.get(i)).execute(); 
 	      	   }
 	        }
 			if(application.is3GOr4GConnected() || application.isWifiConnected()){
-				Log.e("", conversation+" "+conversation.getXmpp_room_jid());
-	            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
-	                @Override
-	                public void onSuccess() {
-	                }
-	
-	                @Override
-	                public void onError(List list) {
-	                }
-	            });
+				try {
+					Log.e(TAG, conversation+" "+conversation.getXmpp_room_jid());
+		            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
+		                @Override
+		                public void onSuccess() {
+		                }
+		
+		                @Override
+		                public void onError(List list) {
+		                }
+		            });
+				} catch(Exception ex){
+					conversation = smReader.getConversationById(conversation.getId());
+					Log.e(TAG, "conversation.getXmpp_room_jid()--"+conversation.getXmpp_room_jid());
+					chat = new GroupChatManagerImpl(fragment);
+					try{
+		            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
+		                @Override
+		                public void onSuccess() {
+		                }
+		
+		                @Override
+		                public void onError(List list) {
+		                }
+		            });
+					} catch(Exception exception){
+						exception.printStackTrace();
+					}
+				}
 				passPhrase = application.getPassPhrase(conversation.getId());
 				adapter.setPassPhrase(passPhrase);
 				if(passPhrase==null){
@@ -961,7 +1376,14 @@ public class NewMessageFragment extends Fragment {
 				conversation.setPassPhrase(passPhrase);
 				new GetPatientInfoSharingPermission().execute(); 
 			}
+			new MarkMessagesAsReadLocally(conversation.getId()).execute();
+			loadearliermessages.setVisibility(View.GONE);
+			ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) lvChatList.getLayoutParams();
+		    layoutParams.setMargins(0, 0, 0, 0);
 
+			} catch(Exception ex){
+				
+			}
 		}
 	}
 	
@@ -981,6 +1403,25 @@ public class NewMessageFragment extends Fragment {
 		}
 		
 	}
+	
+	//runnable for double chk mark
+    private Runnable runnable = new Runnable() {
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			//ListView list = getListView();
+			//Log.e("runnable", "running");
+			int start = lvChatList.getFirstVisiblePosition();
+			for(int i=start;i<=lvChatList.getLastVisiblePosition();i++){
+			    View v = lvChatList.getChildAt(i-start);
+			    ImageView statusIndicator1 = (ImageView) v.findViewById(R.id.statusIndicator1);
+			    if(statusIndicator1 != null)
+			    	statusIndicator1.setVisibility(View.VISIBLE);
+			}
+		}
+		 
+	};
   
 	public void timerUpdation() {
 		timerUpdateHandler = new Handler();
@@ -1012,6 +1453,35 @@ public class NewMessageFragment extends Fragment {
 		}
 	}
 	
+   	public void setHandler(){
+    	handler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case VorbisRecorder.START_ENCODING:
+                    	stopWatch.start();
+                        Log.i("","Starting to encode");
+                        break;
+                    case VorbisRecorder.STOP_ENCODING:
+                    	stopWatch.stop();
+                    	Log.i("","Stopping the encoder");
+                        break;
+                    case VorbisRecorder.UNSUPPORTED_AUDIO_TRACK_RECORD_PARAMETERS:
+                    	Log.i("","You're device does not support this configuration");
+                        break;
+                    case VorbisRecorder.ERROR_INITIALIZING:
+                    	Log.i("","There was an error initializing.  Try changing the recording configuration");
+                        break;
+                    case VorbisRecorder.FAILED_FOR_UNKNOWN_REASON:
+                    	Log.i("","The encoder failed for an unknown reason!");
+                        break;
+                    case VorbisRecorder.FINISHED_SUCCESSFULLY:
+                    	Log.i("","The encoder has finished successfully");
+                        break;
+                }
+            }
+        };
+    }
    	
    	@Override
    	public void onActivityCreated(Bundle savedInstanceState) {
@@ -1064,6 +1534,7 @@ public class NewMessageFragment extends Fragment {
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if(requestCode == 0){
+			BundleKeys.CAPTURE_IMAGE = true;
 			if(resultCode == Activity.RESULT_OK){
 				//Add photo to listview
 				String imagePath = activity.getCurrentPhotoPath();
@@ -1071,28 +1542,84 @@ public class NewMessageFragment extends Fragment {
 					ImageCompressionAsyncTask compressionTask = new ImageCompressionAsyncTask(imagePath);
 					compressionTask.execute();
 				}
-		    	
 			}else if(resultCode == Activity.RESULT_CANCELED){
 				Toast.makeText(activity, "Cancelled", 500).show();
 			}
 		}
 	}
-
+	
+	UploadAudioContent audioContent= null;
 	private void uploadAudio(final String audioPath){
-		File audioFile = new File(audioPath);
+		// TODO Auto-generated method stub
+		final File audioFile = new File(audioPath);
+		final File encAudioFile = new File(getAudioFilename());
+		try {
+			copyDirectory(audioFile, encAudioFile);
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		etMessage.setHint(getResources().getString(R.string.sendingmessage));
+		try {
+			byte[] array = getAudioFileFromSdCard(audioPath);
+			Log.e("Upload byteArray", "Normal bytearray--"+array.length);
+			byte[] encrypted = cipher.encrypt(array, passPhrase);
+			//FileUtils.writeByteArrayToFile(encAudioFile, encrypted);
+			FileOutputStream fos = new FileOutputStream(encAudioFile);
+			fos.write(encrypted);
+			fos.close();
+			Log.e("Upload byteArray", "Upload Encrypted bytearray--"+encrypted.length);
+			Log.e("Upload byteArray", "passPhrase--"+ passPhrase);
+			Log.e("Upload byteArray", "file Path::"+ encAudioFile);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		audioContent = new UploadAudioContent(encAudioFile, audioPath);
+		//File audioFile = new File(audioPath);
+		Log.e("uploadAudio Record", "audioFile = "+audioFile);
 		// Upload new file
-		//
-		QBContent.uploadFileTask(audioFile, true, null, new QBEntityCallbackImpl<QBFile>() {
+		QBContent.uploadFileTask(audioContent.getEncAudioFile(), true, null, new QBEntityCallbackImpl<QBFile>() {
 		    @Override
 		    public void onSuccess(QBFile qbFile, Bundle bundle) {
+		    	
 		    	int attachmentId = qbFile.getId();
 				ChatMessage c = new ChatMessage("", true);
 				c.setMessageType(ChatMessage.MSGTYPE_AUDIO);
 				c.setSelectedContact(recipient_name);
 				c.setMessageTime(new Date());
 
-	    		String path = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversation.getId()+"/"+attachmentId+".ogg";
-		    	try {
+	    		String path = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversation.getId()+"/"+attachmentId+AUDIO_FILE_EXT_M4A;
+	    		try {
+		    		File tFile = new File(audioContent.getLocalAudioPath());
+					copyDirectory(tFile, new File(path));
+					tFile.delete();
+					audioContent.getEncAudioFile().delete();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+	    		
+//	    		try {
+//		    		File source = new File(audioPath);
+//		    		File destination = new File(path);
+//					copyDirectory(source, destination);
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+		    	try{
+		    		etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+		    	} catch(Exception ex){
+		    	}
+		    	c.setAttachmentId(String.valueOf(attachmentId));
+		    	SendMessageTask task = new SendMessageTask(c);
+		    	task.execute();
+				
+				
+				/*String path = User.getUserRoot()+"/"+application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN)+"/"+conversation.getId()+"/"+attachmentId+AUDIO_FILE_EXT_M4A;
+		    	
+				try {
 		    		File source = new File(audioPath);
 		    		File destination = new File(path);
 					copyDirectory(source, destination);
@@ -1102,12 +1629,15 @@ public class NewMessageFragment extends Fragment {
 				}
 		    	c.setAttachmentId(String.valueOf(attachmentId));		    
 		    	SendMessageTask task = new SendMessageTask(c);
-		    	task.execute();
+		    	task.execute();*/
 		    }
-
+		    
 		    @Override
 		    public void onError(List<String> strings) {
-
+		    	try{
+		    		etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+		    	} catch(Exception ex){
+		    	}
 		    }
 		}, new QBProgressCallback() {
 		    @Override
@@ -1134,19 +1664,73 @@ public class NewMessageFragment extends Fragment {
 		}
 	}
 	
+	class UploadAudioContent{
+		
+		private File encAudioFile;
+		private String localAudioPath;
+		
+		public UploadAudioContent(File encAudioFile, String localAudioPath){
+			this.encAudioFile = encAudioFile;
+			this.localAudioPath = localAudioPath;
+		}
+		
+		public File getEncAudioFile() {
+			return encAudioFile;
+		}
+
+		public void setEncAudioFile(File encAudioFile) {
+			this.encAudioFile = encAudioFile;
+		}
+
+		public String getLocalAudioPath() {
+			return localAudioPath;
+		}
+
+		public void setLocalAudioPath(String localAudioPath) {
+			this.localAudioPath = localAudioPath;
+		}
+	}
+	
 	class UploadImageTask extends AsyncTask{
 
 		private String imagePath;
 		private UploadContent content;
 		private boolean deleteSource = true;
+		private EntradaApplication application;
+		private AES256Cipher cipher;
+		private String passPhrase;
+		private ENTConversation conversation;
+		private ChatManager chat;
 		
-		public UploadImageTask(String imagePath){
+		public UploadImageTask(String imagePath, AES256Cipher cipher, String passPhrase, ENTConversation conversation, ChatManager chat){
 			this.imagePath = imagePath;
+			application = (EntradaApplication) EntradaApplication.getAppContext();
+			this.cipher = cipher;
+			this.passPhrase = passPhrase;
+			this.conversation = conversation;
+			this.chat = chat;
 		}
 		
-		public UploadImageTask(String imagePath, boolean deleteSource){
+		public UploadImageTask(String imagePath, boolean deleteSource, AES256Cipher cipher, String passPhrase, ENTConversation conversation, ChatManager chat){
 			this.imagePath = imagePath;
 			this.deleteSource = deleteSource;
+			application = (EntradaApplication) EntradaApplication.getAppContext();
+			this.cipher = cipher;
+			this.passPhrase = passPhrase;
+			this.conversation = conversation;
+			this.chat = chat;
+		}
+		
+		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+			try{
+				//etMessage.setHint(getResources().getString(R.string.sendingmessage));
+    			footerMessage.setText(getResources().getString(R.string.sendingmessage));
+                updateFooter();
+			} catch(Exception ex){
+			}
 		}
 		
 		@Override
@@ -1190,24 +1774,42 @@ public class NewMessageFragment extends Fragment {
 						}
 						content.getEncImageFile().delete();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-			    	ChatMessage c = new ChatMessage("", true);
-					c.setMessageType(ChatMessage.MSGTYPE_IMAGE);
-					c.setSelectedContact(recipient_name);
-					c.setMessageTime(new Date());
-					c.setImagePath(content.getImagePath());	
-			    	c.setAttachmentId(String.valueOf(attachmentId));
-			    	SendMessageTask task = new SendMessageTask(c);
-			    	task.execute();
+			    	try{
+			    		etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+			    	} catch(Exception ex){
+			    	}
+			    	if(chat.isJoined()) {
+				    	final ChatMessage c = new ChatMessage("", true);
+						c.setMessageType(ChatMessage.MSGTYPE_IMAGE);
+						c.setSelectedContact(recipient_name);
+						c.setMessageTime(new Date());
+						c.setImagePath(content.getImagePath());	
+				    	c.setAttachmentId(String.valueOf(attachmentId));
+			    		SendMessageTask task = new SendMessageTask(c, chat, conversation);
+			    		task.execute();
+			    	} else {
+						ENTMessage entmessage = new ENTMessage();
+						entmessage.setChatDialogId(conversation.getId());
+						entmessage.setAttachmentID(String.valueOf(attachmentId));
+						entmessage.setContentType(ChatMessage.MSGTYPE_IMAGE);
+						entmessage.setMessage("");
+						entmessage.setPassPhrase(passPhrase);
+			    		((GroupChatManagerImpl) chat).joinGroupChat(conversation, entmessage);
+			    	}
 			    	deleteLastPhotoTaken();
-
+			    	task = null;
 			    }
 
 			    @Override
 			    public void onError(List<String> strings) {
-
+			    	try{
+			    		Log.e(TAG, strings.toString());
+			    		//etMessage.setHint(getResources().getString(R.string.error_sendingmessage));
+			    		setFooterWithEditText();
+			    	} catch(Exception ex){
+			    	}
 			    }
 			}, new QBProgressCallback() {
 			    @Override
@@ -1217,6 +1819,7 @@ public class NewMessageFragment extends Fragment {
 		}
 		
 	}
+
 	
 	public String getFilename() {
 		File file = new File(Environment.getExternalStorageDirectory().getPath(), "MyFolder/Images");
@@ -1226,6 +1829,15 @@ public class NewMessageFragment extends Fragment {
 		String uriSting = (file.getAbsolutePath() + "/"+ System.currentTimeMillis() + ".jpg");
 		return uriSting;
 
+	}
+	
+	public String getAudioFilename() {
+		File file = new File(Environment.getExternalStorageDirectory().getPath(), "MyFolder/Audios");
+		if (!file.exists()) {
+			file.mkdirs();
+		}
+		String uriSting = (file.getAbsolutePath() + "/"+ System.currentTimeMillis() + ".m4a");
+		return uriSting;
 	}
 	
 	
@@ -1299,7 +1911,6 @@ public class NewMessageFragment extends Fragment {
 	}
 	
 	class ImageCompressionAsyncTask extends AsyncTask<String, Void, String>{
-		private boolean fromGallery = false;
 		private ImageLoadingUtils utils;
 		private String filePath;
 		
@@ -1409,9 +2020,10 @@ public class NewMessageFragment extends Fragment {
 		
 		@Override
 		protected void onPostExecute(String result) {			 
-			new UploadImageTask(result).execute();
+			UploadImageTask task = new UploadImageTask(result, cipher, passPhrase, conversation, chat);
+			task.execute();
 		}
-		
+
 	}
 	
 	@Override
@@ -1423,6 +2035,7 @@ public class NewMessageFragment extends Fragment {
 			scrollListViewToBottom();
 		}
 		if(chat!=null && !chat.isJoined()) {
+			try{
 	        ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
 	            @Override
 	            public void onSuccess() {
@@ -1432,6 +2045,20 @@ public class NewMessageFragment extends Fragment {
 	            public void onError(List list) {
 	            }
 	        });
+			} catch(Exception ex){
+				conversation = smReader.getConversationById(conversation.getId());
+				Log.e("", "conversation.getXmpp_room_jid()--"+conversation.getXmpp_room_jid());
+				chat = new GroupChatManagerImpl(fragment);
+	            ((GroupChatManagerImpl) chat).joinGroupChat(conversation, new QBEntityCallbackImpl() {
+	                @Override
+	                public void onSuccess() {
+	                }
+	
+	                @Override
+	                public void onError(List list) {
+	                }
+	            });
+			}
 		}
         activity.getActionBar().setDisplayUseLogoEnabled(false);
         activity.getActionBar().setDisplayShowHomeEnabled(false);
@@ -1441,30 +2068,78 @@ public class NewMessageFragment extends Fragment {
         activity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 		activity.getActionBar().setCustomView(mCustomView);
 		activity.getActionBar().setDisplayShowCustomEnabled(true);
+		if(!isCreateConversation) {
+			setFooter();
+		}
+	}
+
+	protected void setFooter(){
 		if(recepientsCount == 0){
-			participantsLeftMsg.setVisibility(View.VISIBLE);
-            btnAttachContent.setVisibility(View.GONE);
-            etMessage.setVisibility(View.GONE);
-            btnSend.setVisibility(View.GONE);
-            tvDuration.setVisibility(View.GONE);
-            btnRecordAudio.setVisibility(View.GONE);
+			footerMessage.setText(getResources().getString(R.string.participants_left_msg));
+            updateFooter();
+		} else if(!application.isWifiConnected() && !application.is3GOr4GConnected()){
+			footerMessage.setText(getResources().getString(R.string.offline_message));
+            updateFooter();
 		} else {
-			participantsLeftMsg.setVisibility(View.GONE);
-            btnAttachContent.setVisibility(View.VISIBLE);
-            etMessage.setVisibility(View.VISIBLE);
+			setFooterWithEditText();
+		}
+	}
+
+	private void setFooterWithEditText() {
+		footerMessage.setVisibility(View.GONE);
+		btnAttachContent.setVisibility(View.VISIBLE);
+		etMessage.setVisibility(View.VISIBLE);
+		etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+		etMessage.requestFocus();
             btnSend.setVisibility(View.GONE);
             tvDuration.setVisibility(View.GONE);
             btnRecordAudio.setVisibility(View.VISIBLE);
+	}
+
+	protected void updateFooter() {
+		try{
+			footerMessage.setVisibility(View.VISIBLE);
+			btnAttachContent.setVisibility(View.GONE);
+			etMessage.setVisibility(View.GONE);
+			btnSend.setVisibility(View.GONE);
+			tvDuration.setVisibility(View.GONE);
+			btnRecordAudio.setVisibility(View.GONE);
+			InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+			View view = activity.getCurrentFocus();
+			if(view!=null){
+				imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+			}
+		} catch(Exception ex){
+			ex.printStackTrace();
 		}
+	}
+
+	protected void setRecipients(){
+		if(recepientsCount>0){
+    		StringBuffer buffer = new StringBuffer();
+			ENTUser user = getENTUserFromId(recipients[0]);
+			buffer.append(user == null? recipients[0] : user.getName());
+			if(recepientsCount>1){
+				buffer.append(" +"+(recepientsCount-1));
+			}
+			recipient_name = buffer.toString();
+		} else {
+			recipient_name = "";
+		}
+		tvRecipient.setText(recipient_name);
 	}
 	
 	@Override
 	public void onPause() {
 		super.onPause();
+		if(popupMenu != null){
+			popupMenu.dismiss();
+		} 
 		BundleKeys.isFront = false;
 		try {
 			chat.release();
-		} catch (XMPPException e) {
+			new MarkMessagesAsReadLocally(conversation.getId()).execute();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -1480,12 +2155,14 @@ public class NewMessageFragment extends Fragment {
 	/*
 	 * Scroll istview to bottom after content added
 	 */
-	protected void scrollListViewToBottom() {
+	public void scrollListViewToBottom() {
 	    lvChatList.post(new Runnable() {
 	        @Override
 	        public void run() {
 	            // Select the last row so it will scroll into view...
+				lvChatList.requestFocusFromTouch();
 	        	lvChatList.setSelection(adapter.getCount() - 1);
+	        	etMessage.requestFocus();
 	        }
 	    });
 	}
@@ -1525,7 +2202,14 @@ public class NewMessageFragment extends Fragment {
 							if(acct_folders[i].getName().trim().equals(String.valueOf(job_id))){
 								job_folders = acct_folders[i].listFiles();
 								for (int j = 0; j < job_folders.length; j++) {
-									if(job_folders[j].isDirectory() && job_folders[j].getName().trim().equalsIgnoreCase("temp")){
+									Job job = reader.getJob(job_id);
+									String subpath = "Images";
+									if(job.isFlagSet(Flags.IS_FIRST)){
+										subpath = "Images";
+									} else {
+										subpath = "temp";
+									}
+									if(job_folders[j].isDirectory() && job_folders[j].getName().trim().equalsIgnoreCase(subpath)){
 										img_folders = job_folders[j].listFiles();
 										if(img_folders.length > 0)
 											hasImages = true;
@@ -1561,16 +2245,10 @@ public class NewMessageFragment extends Fragment {
 		protected Object doInBackground(Object... arg0) {
 			try {
 				Patient patient;
-				if(currentAccount != null) {
-				    DomainObjectReader reader = state.getProvider(currentAccount);
-					patient = reader.getPatient(patient_id);
+					patient = smReader.getPatient(patient_id);
 					if(patient!=null) {
 						patient_name = patient!=null? (patient.getFirstName() + " " + patient.getLastName()): "Loading patient..";
-						//patient_name = (patient!=null && patient.getFullName()!=null) ? patient.getFullName() : String.valueOf(patient_id);
 					} else {
-						getDemographics();
-					}
-				}else {
 						getDemographics();
 					}
 			} catch (ServiceException e) {
@@ -1586,9 +2264,14 @@ public class NewMessageFragment extends Fragment {
 			try {
 				json = new JSONObject(response);
 				patient_name = json.getString("FirstName")+" "+json.getString("LastName");
+				Patient p = new Patient(json.getLong("PatientID"), json.getString("MRN"), json.getString("FirstName"), json.getString("MI"), json.getString("LastName"), json.getString("DOB"), json.getString("Gender"), json.getString("AlternateID"), json.getString("Address1"), json.getString("Address2"), json.getString("City"), json.getString("State"), json.getString("Zip"), json.getString("Phone1"));
+				writer.writePatient(p);
 			} catch (JSONException e) {
 				e.printStackTrace();
 				patient_name = String.valueOf(patient_id);
+			} catch (DomainObjectWriteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		
@@ -1596,10 +2279,16 @@ public class NewMessageFragment extends Fragment {
 		protected void onPostExecute(Object result) {
 			super.onPostExecute(result);
 			tvPatName.setText(patient_name);
+			if(patient_id!=0){
+				ivPatPic.setImageResource(R.drawable.pat_photo);
+			} else {
+				ivPatPic.setImageResource(R.drawable.patient_conversation_no_photo_icon);
+			}
 			ivPatPic.setVisibility(View.VISIBLE);
 		}
 		
 	}
+	
 	private void renderMessageUI(ENTMessage message,
 			ChatMessage chatMessage, int type, String attachmentID) {
 		conversation = BundleKeys.CURRENT_CONVERSATION;
@@ -1695,15 +2384,19 @@ public class NewMessageFragment extends Fragment {
 				adapter.addMessage(chatMessage);
 				adapter.notifyDataSetChanged();
 				scrollListViewToBottom();
+				if(entmessage.getMessage().contains("left")){
+					new UpdateUI(entmessage).execute();
+				}
 				try {
 					if(!isMine) {
 						new UpdateMessageAsRead(entmessage).execute();
 					}
+					entmessage.setType(entmessage.getContentType());
 					writer.addMessageToConversation(entmessage);
 				} catch (DomainObjectWriteException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				isCreateConversation = false;
 				BundleKeys.LASTMESSAGETIME = entmessage.getSentDate();
 				BundleKeys.LASTMESSAGEID = entmessage.getId();
 				if(entmessage.getPatientID()!=0 && (tvPatName.getText().equals(MESSAGE) || tvPatName.getText().equals(GROUP_MESSAGE))){
@@ -1711,8 +2404,51 @@ public class NewMessageFragment extends Fragment {
 					new GetPatientDemographics().execute();
 				}
 				new UpdateLastMessage(entmessage).execute();
+				etMessage.setHint(getResources().getString(R.string.hint_chat_msg));
+				setFooterWithEditText();
 			}
 		});
+	}
+	
+	class UpdateUI extends AsyncTask{
+
+		private ENTMessage message;
+		private List<String> list, tempList;
+		
+		public UpdateUI(ENTMessage message){
+			this.message = message;
+		}
+		
+		@Override
+		protected Object doInBackground(Object... arg0) {
+			// TODO Auto-generated method stub
+			list = new LinkedList(Arrays.asList(recipients));
+			list.remove(message.getSender());
+			tempList = new ArrayList<String>(list);
+			tempList.add(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID));
+			recipients = (String[]) list.toArray(new String[list.size()]);
+			conversation.setOccupantsIds((String[]) tempList.toArray(new String[tempList.size()]));
+			conversation.setLastMessage(message.getMessage());
+			try {
+				writer.updateConversation(conversation, false);
+			} catch (DomainObjectWriteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			recepientsCount = recipients.length;
+			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(Object result) {
+			super.onPostExecute(result);
+			setFooter();
+			setRecipients();
+		}
+		
 	}
 	
 	class UpdateMessageAsRead extends AsyncTask{
@@ -1736,6 +2472,47 @@ public class NewMessageFragment extends Fragment {
 			return null;
 		}
 		
+	}
+	
+	class MarkMessagesAsReadLocally extends AsyncTask{
+
+		private String conversationId;
+
+		public MarkMessagesAsReadLocally(String conversationId){
+			this.conversationId = conversationId;
+		}
+
+		@Override
+		protected void onPostExecute(Object result) {
+			// TODO Auto-generated method stub
+			super.onPostExecute(result);
+			EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
+			NotificationManager notificationManager = (NotificationManager) application.getSystemService(Context.NOTIFICATION_SERVICE);
+			notificationManager.cancel(1);
+		}
+		
+		@Override
+		protected Object doInBackground(Object... arg0) {
+			writer.markConversationMessagesAsRead(conversationId);
+			return null;
+		}
+	}
+	
+	private byte[] getAudioFileFromSdCard(String path)
+			throws FileNotFoundException {
+		byte[] inarry = null;
+		try {
+			File file = new File(path); // Creating file object
+			FileInputStream fileInputStream = null;
+			byte[] bFile = new byte[(int) file.length()];
+			fileInputStream = new FileInputStream(file);
+			fileInputStream.read(bFile);
+			fileInputStream.close();
+			inarry = bFile;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return inarry;
 	}
 
 }

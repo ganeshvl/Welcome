@@ -1,7 +1,6 @@
 package com.entradahealth.entrada.core.inbox.dao;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 import org.apache.http.ParseException;
 import org.apache.http.client.ClientProtocolException;

@@ -24,11 +24,11 @@ import android.content.SharedPreferences.Editor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
-import android.support.multidex.MultiDex;
 import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
 import com.entradahealth.entrada.android.R;
+import com.entradahealth.entrada.core.domain.Encounter;
 
 /**
  * TODO: Document this!
@@ -70,12 +70,13 @@ public class EntradaApplication extends MultiDexApplication {
     private static boolean isNew;
     private static ExecutorService executor;
     private static ExecutorService messagesExecutor;
-    private int THREAD_POOL_SIZE = 3;
-    private int MESSAGES_THREAD_POOL_SIZE = 10;
+    private int THREAD_POOL_SIZE = 2;
+    private int MESSAGES_THREAD_POOL_SIZE = 2;
 	private SharedPreferences preferences;
 	private Editor editor;
 	private String MY_PREFS_NAME = "Entrada";
 	private HashMap<String, String> conversationMap;
+	private HashMap<Long, Encounter> encounters;
 
     public static Context getAppContext() {
         return EntradaApplication.context;
@@ -140,7 +141,7 @@ public class EntradaApplication extends MultiDexApplication {
 		preferences = getSharedPreferences(MY_PREFS_NAME, Context.MODE_WORLD_READABLE);
 		editor = preferences.edit();
 		conversationMap = new HashMap<String, String>();
-
+		encounters = new HashMap<Long, Encounter>();
     }
     
 	public void setIntIntoSharedPrefs(String key, int value){
@@ -222,9 +223,19 @@ public class EntradaApplication extends MultiDexApplication {
 		this.conversationMap.put(convId, passPhrase);
 	}
 
-	@Override protected void attachBaseContext(Context base) {
-		super.attachBaseContext(base);
-		MultiDex.install(this);
+	public Encounter getEncounter(Long id) {
+		return encounters.get(id);
+	}
+
+	public void addEncounter(Long encId, Encounter encounter) {
+		this.encounters.put(encId, encounter);
 	}
 	
+	public HashMap<Long, Encounter> getEncounters(){
+		return encounters;
+	}
+	
+	public int getThreadPoolSize(){
+		return THREAD_POOL_SIZE;
+	}
 }

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical" >
+
+    <ListView
+        android:id="@+id/participantsList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="45dp"
+        android:layout_marginTop="70dp"
+        android:divider="#cccccc"
+        android:dividerHeight="2dp"
+        android:listSelector="@android:color/transparent" />
+
+    <RelativeLayout
+        android:id="@+id/group_details"
+        android:layout_width="fill_parent"
+        android:layout_height="100dp"
+        android:background="@drawable/grpinfo_bg"
+        android:padding="10dp" >
+
+        <ImageView
+            android:id="@+id/patient_img"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:paddingTop="5dp"
+            android:src="@drawable/patient_conversation_no_photo_icon" />
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/patient_img" >
+
+            <TextView
+                android:id="@+id/patient_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/patient_img"
+                android:paddingLeft="7dp"
+                android:paddingTop="5dp"
+                android:textColor="#666666"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/grp_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/patient_name"
+                android:layout_toRightOf="@id/patient_img"
+                android:paddingBottom="10dp"
+                android:paddingLeft="7dp"
+                android:paddingTop="2dp"
+                android:text="@string/group_members"
+                android:textColor="#222222"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/grp_members_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/patient_name"
+                android:layout_toRightOf="@id/grp_title"
+                android:paddingBottom="10dp"
+                android:paddingLeft="5dp"
+                android:paddingTop="2dp"
+                android:textColor="#222222"
+                android:textSize="17sp" />
+        </RelativeLayout>
+    </RelativeLayout>
+
+</FrameLayout>

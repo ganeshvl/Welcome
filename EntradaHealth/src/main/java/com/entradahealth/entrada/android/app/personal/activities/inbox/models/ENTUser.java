@@ -1,6 +1,6 @@
 package com.entradahealth.entrada.android.app.personal.activities.inbox.models;
 
-public class ENTUser {
+public class ENTUser implements Comparable<ENTUser>{
 
 	private String id;
 	private String full_name; // firstname + lastname
@@ -16,6 +16,11 @@ public class ENTUser {
 	
 	public ENTUser() {
 	}
+	
+	public ENTUser(String id, String name) {
+		this.id = id;
+		this.full_name = name;
+	}
 
 	public ENTUser(String MI, String firstName, String lastName,
 			String phoneNumber, String emailAddress) {
@@ -25,8 +30,6 @@ public class ENTUser {
 		this.phoneNumber = phoneNumber;
 		this.emailAddress = emailAddress;
 	}
-
-
 
 	public String getId() {
 		return id;
@@ -93,6 +96,12 @@ public class ENTUser {
 	}
 	public void setEmailAddress(String emailAddress) {
 		this.emailAddress = emailAddress;
+	}
+
+	@Override
+	public int compareTo(ENTUser user) {
+		// TODO Auto-generated method stub
+		return this.full_name.compareToIgnoreCase(user.getName());
 	}
 	
 }

@@ -18,7 +18,14 @@ public class ENTHandlerFactory{
 		handlerMap.put(QBUSER, new ENTQBUserHandler());
 	}
 
-	public synchronized static ENTHandlerFactory getInstance() {
+	public static ENTHandlerFactory getInstance() {
+		if (factory == null) {
+			factory = new ENTHandlerFactory();
+		}
+		return factory;
+	}
+	
+	public static ENTHandlerFactory createInstance(){
 		factory = new ENTHandlerFactory();
 		return factory;
 	}

@@ -15,6 +15,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.acra.ACRA;
 import org.apache.commons.io.FileUtils;
@@ -33,6 +35,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.entradahealth.entrada.android.R;
+import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
 import com.entradahealth.entrada.android.app.personal.UserState;
@@ -57,6 +60,7 @@ public class DictationUploadService extends Service{
     private ExecutorService executor;
     private static Account account;
     private static UserState userState;
+    private EntradaApplication application;
 
 	public static boolean isRunning() {
 		return running;
@@ -68,28 +72,34 @@ public class DictationUploadService extends Service{
         super.onCreate();
         handler = new Handler();
         executor = EntradaApplication.getExecutor();
+        application = (EntradaApplication) EntradaApplication.getAppContext();
         Log.e("", "--OnCreate()-- **"+ executor);
     }
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		// TODO Auto-generated method stub
-		Runnable thread = new UploadThread(this, intent, startId);
-		executor.execute(thread);
+		Runnable thread = new UploadThread(this, intent, startId, userState, account);
+		try {
+			executor.execute(thread);
+		} catch(RejectedExecutionException ex){
+			executor = Executors.newFixedThreadPool(application.getThreadPoolSize());
+			executor.execute(thread);
+		}
 		return START_REDELIVER_INTENT;
 	}
 	
-	public static void startUpload(Activity activity, UserState userState,
-			Account account, Job job) {
-		File accountPath = new File(userState.getUserData()
-				.getUserAccountsDir(), account.getName());
+	public static void startUpload(Activity activity, UserState _userState,
+			Account _account, Job job) {
+		File accountPath = new File(_userState.getUserData()
+				.getUserAccountsDir(), _account.getName());
 		File dbPath = new File(accountPath, String.valueOf(job.id));
         Intent i = new Intent(activity, DictationUploadService.class);
         i.putExtra(BundleKeys.UPLOADING_DICTATION, dbPath);
         i.putExtra(BundleKeys.SELECTED_JOB, job.id);
-        i.putExtra(BundleKeys.SELECTED_JOB_ACCOUNT, account.getName());
-        DictationUploadService.account = account;
-        DictationUploadService.userState = userState;
+        i.putExtra(BundleKeys.SELECTED_JOB_ACCOUNT, _account.getName());
+        account = _account;
+        userState = _userState;
         activity.startService(i);
     }
 	
@@ -110,11 +120,15 @@ public class DictationUploadService extends Service{
 		private APIService service;
 		private DomainObjectProvider provider;
 		private int startId;
+		private Account account;
+		private UserState userState;
 		
-		UploadThread(DictationUploadService uploadService, Intent intent, int startId){
+		UploadThread(DictationUploadService uploadService, Intent intent, int startId, UserState userState, Account account){
 			this.uploadService = uploadService;
 			this.intent = intent;
 			this.startId = startId;
+			this.account = account;
+			this.userState = userState;
 		}
 		
 		@Override
@@ -134,6 +148,10 @@ public class DictationUploadService extends Service{
 		
 		            notificationMgr.notify(R.string.notification_dictation_upload, builder.getNotification());
 		            
+		            if(userState == null){
+		            	userState = AndroidState.getInstance().getUserState();
+		            	account = userState.getCurrentAccount();
+		            } 
 					provider = userState.getProvider(account);
 					job = userState.getProvider(account).getJob(
 							intent.getLongExtra(BundleKeys.SELECTED_JOB, -1337));
@@ -268,6 +286,8 @@ public class DictationUploadService extends Service{
 														try {
 															updateJobFlags(statusCode);
 														} catch (ServiceException e) {
+															  executor.shutdown();
+															  stopService(intent);
 															// TODO Auto-generated catch block
 															e.printStackTrace();
 														} catch (DomainObjectWriteException e) {
@@ -345,6 +365,8 @@ public class DictationUploadService extends Service{
 											//provider.writeDictation(local_dict);
 										}catch (ServiceException e) { 
 											  // TODO Auto-generated catch block
+											  executor.shutdown();
+											  stopService(intent);
 											e.printStackTrace(); 
 										}
 									}else{
@@ -475,7 +497,9 @@ public class DictationUploadService extends Service{
                     statusCode = service.uploadDictation(is1, checksum1, local_dict, job.id, db.getDurationInSecs(), null, provider);
                 else
                     statusCode = service.uploadDictation(is1, checksum1, dict, provider);
-            }catch (ServiceException e) { 
+            }catch (ServiceException e) {
+				  executor.shutdown();
+				  stopService(intent);
 				  // TODO Auto-generated catch block
 				  e.printStackTrace(); 
 			  } catch (DomainObjectWriteException e) { 
@@ -532,7 +556,7 @@ public class DictationUploadService extends Service{
 			File imgFile = new File(img_paths.get(i));
 			try { 
 				  md = MessageDigest.getInstance("MD5"); 
-        }
+			}
 			  catch(NoSuchAlgorithmException e1) { 
 				  // TODO Auto-generated catch block
 				  e1.printStackTrace(); 
@@ -576,12 +600,20 @@ public class DictationUploadService extends Service{
 			}else{
 				dictId = dict.dictationId;
 			}*/
-			
+			Log.e("Local - DictId - Image path", imgFile.getAbsolutePath());
 			Log.e("Local - DictId - ImageCount", Boolean.toString(isLocalJob)+ "--"+Long.toString(dict.dictationId)+"--"+Integer.toString(img_paths.size()));
 			
 			try {
-				  service.uploadImages(is, checksum, intent.getLongExtra(BundleKeys.SELECTED_JOB, -1337), dict.dictationId, provider, postUpload, noMoreImages); 
+				  int statusCode = service.uploadImages(is, checksum, intent.getLongExtra(BundleKeys.SELECTED_JOB, -1337), dict.dictationId, provider);
+				  if(statusCode == 200) {
+					  deleteFile(imgFile.getAbsolutePath());
+				  }
+				  if(postUpload!=null && noMoreImages) {
+					  postUpload.run();
+				  }
 			  }catch (ServiceException e) { 
+				  executor.shutdown();
+				  stopService(intent);
 				  // TODO Auto-generated catch block
 				  e.printStackTrace(); 
 			  } catch (DomainObjectWriteException e) { 

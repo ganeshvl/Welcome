@@ -3,6 +3,7 @@ package com.entradahealth.entrada.android.app.personal.activities.add_account;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.json.JSONException;
@@ -14,25 +15,29 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.entradahealth.entrada.android.R;
-import com.entradahealth.entrada.android.app.personal.EntradaActivity;
+import com.entradahealth.entrada.android.app.personal.BundleKeys;
+import com.entradahealth.entrada.android.app.personal.EntradaFragmentActivity;
 import com.entradahealth.entrada.android.app.personal.Environment;
 import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTUser;
+import com.entradahealth.entrada.android.app.personal.activities.pin_entry.PinEntryFragment;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
 
 
-public class NewUserActivity extends EntradaActivity{
+public class NewUserActivity extends EntradaFragmentActivity{
 
 	private EditText registrationCode;
 	private TextView validateMessage;
@@ -43,15 +48,31 @@ public class NewUserActivity extends EntradaActivity{
 	private Context context;
 	private String invitationCode;
     private static final Pattern CODE_PATTERN = Pattern.compile("^\\w{6}(-(DEV|QA1|QA2|STAGE))?$");
+    private EmailValidator emailValidator;
+	private FrameLayout frameLayout;
+	private LinearLayout newUserLayout;
 	
     @Override
     protected void onStart()
     {
         super.onStart();
-
         ActionBar ab = getActionBar();
         ab.setTitle(R.string.redeem_invitation);
-        
+    }
+    
+    @Override
+    protected void onRestart() {
+    	// TODO Auto-generated method stub
+    	super.onRestart();
+		newUserLayout.setVisibility(View.GONE);
+		frameLayout.setVisibility(View.VISIBLE);
+		Bundle b = new Bundle();
+		b.putBoolean(BundleKeys.FROM_REDEEM_INVITE, true);
+		PinEntryFragment pinFragment = new PinEntryFragment();
+		pinFragment.setArguments(b);
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction().addToBackStack(null);
+		ft.replace(R.id.fragcontent, pinFragment, "pin");
+		ft.commitAllowingStateLoss();
     }
     
 	@Override
@@ -61,7 +82,10 @@ public class NewUserActivity extends EntradaActivity{
 		setContentView(R.layout.newuser_registration_layout);
 		environmentsMap = new HashMap<String, String>();
 		context = this;
+		emailValidator = new EmailValidator();
 		fillMapValues();
+		frameLayout = (FrameLayout) findViewById(R.id.fragcontent);
+		newUserLayout = (LinearLayout) findViewById(R.id.newuserlayout);
 		registrationCode = (EditText) findViewById(R.id.registrationCode);
 		validateMessage = (TextView) findViewById(R.id.validateMessage);
 		userDetailsLayout = (LinearLayout) findViewById(R.id.newUserdetailsLayout);
@@ -87,13 +111,19 @@ public class NewUserActivity extends EntradaActivity{
 					validateMessage.setTextColor(Color.RED);
 					return;
 				}
+				String email = ((TextView)findViewById(R.id.emailAddress)).getText().toString();
+				if(!emailValidator.validate(email)){
+					validateMessage.setText("Invalid Email Address");
+					validateMessage.setTextColor(Color.RED);
+					return;
+				}
 				validateMessage.setText("");
 				ENTUser user = new ENTUser();
 				user.setFirstName(((TextView)findViewById(R.id.firstName)).getText().toString());
 				user.setLastName(((TextView)findViewById(R.id.lastName)).getText().toString());
 				user.setMI(((TextView)findViewById(R.id.MI)).getText().toString());
 				user.setPhoneNumber(((TextView)findViewById(R.id.phoneNumber)).getText().toString());
-				user.setEmailAddress(((TextView)findViewById(R.id.emailAddress)).getText().toString());
+				user.setEmailAddress(email);
 				user.setPassword(password.getText().toString());
 				user.setRegistrationCode(invitationCode);
 				RegisterUserTask task = new RegisterUserTask(user);
@@ -144,6 +174,34 @@ public class NewUserActivity extends EntradaActivity{
 		environmentsMap.put("DEV", EnvironmentHandlerFactory.DEV);
 		environmentsMap.put("QA1", EnvironmentHandlerFactory.QA1);
 		environmentsMap.put("QA2", EnvironmentHandlerFactory.QA2);
+	}
+	
+	class EmailValidator {
+		 
+		private Pattern pattern;
+		private Matcher matcher;
+	 
+		private static final String EMAIL_PATTERN = 
+			"^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+	 
+		public EmailValidator() {
+			pattern = Pattern.compile(EMAIL_PATTERN);
+		}
+	 
+		/**
+		 * Validate hex with regular expression
+		 * 
+		 * @param hex
+		 *            hex for validation
+		 * @return true valid hex, false invalid hex
+		 */
+		public boolean validate(final String hex) {
+	 
+			matcher = pattern.matcher(hex);
+			return matcher.matches();
+	 
+		}
 	}
 	
 	class ValidateRegistrationCode extends AsyncTask{
@@ -254,4 +312,19 @@ public class NewUserActivity extends EntradaActivity{
 			}
 		}
 	}
+	
+	public void sucessfulPinEntry(){
+		newUserLayout.setVisibility(View.VISIBLE);
+		frameLayout.setVisibility(View.GONE);
+	}
+
+	@Override
+	public void onBackPressed() {
+		// TODO Auto-generated method stub
+		android.support.v4.app.Fragment pinFragment = getSupportFragmentManager().findFragmentByTag("pin");
+		if(pinFragment==null){
+			super.onBackPressed();
+		} 
+	}
+
 }

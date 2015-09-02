@@ -8,9 +8,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.jivesoftware.smack.SmackException.NotConnectedException;
-import org.jivesoftware.smack.XMPPException;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -469,6 +466,13 @@ public class PatientListItemAdapter<TPatient extends Patient> extends ArrayAdapt
     		application = (EntradaApplication) EntradaApplication.getAppContext();
 		}
     	
+    	@Override
+    	protected void onPreExecute() {
+    		// TODO Auto-generated method stub
+    		super.onPreExecute();
+    		BundleKeys.openPatientSearch = false;
+    	}
+    	
 		@Override
 		protected Object doInBackground(Object... params) {			
 			conversation.setPatientAccess(true);
@@ -499,13 +503,10 @@ public class PatientListItemAdapter<TPatient extends Patient> extends ArrayAdapt
 			super.onPostExecute(result);
 			try {
 				chat.sendMessage(entmessage);
-			} catch (NotConnectedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (XMPPException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			} catch (Exception e) {
+				((GroupChatManagerImpl) chat).joinGroupChat(conversation, entmessage);
+			} 
+			BundleKeys.openPatientSearch = true;
 		}
     	
     }

@@ -262,4 +262,22 @@ public class NullReader implements DomainObjectReader
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public JobType getDefaultGenericJobType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<JobType> getDefaultGenericJobTypes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isExistsInDefaultGenericJobTypes(Long jobTypeId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

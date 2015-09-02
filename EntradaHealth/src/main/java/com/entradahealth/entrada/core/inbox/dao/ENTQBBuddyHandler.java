@@ -73,7 +73,7 @@ public class ENTQBBuddyHandler implements ENTBuddyHandler{
 
 	public List<ENTUser> getBuddies(){
 		state = AndroidState.getInstance().getUserState();
-		try {
+	/*	try {
 			state.setSMUser();
 		} catch (DomainObjectWriteException e) {
 			// TODO Auto-generated catch block
@@ -84,26 +84,16 @@ public class ENTQBBuddyHandler implements ENTBuddyHandler{
 		} catch (InvalidPasswordException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
-		return reader.getBuddies();
+		List<ENTUser> users = new ArrayList<ENTUser>();
+		users.addAll(reader.getBuddies());
+		users.addAll(reader.getPendingInvites());
+		return users;
 	}
 	
 	public void saveContacts(){
 		state = AndroidState.getInstance().getUserState();
-		try {
-			state.setSMUser();
-		} catch (DomainObjectWriteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (AccountException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidPasswordException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 		try {
 			EnvironmentHandlerFactory envFactory = EnvironmentHandlerFactory.getInstance();
 			Environment env = envFactory.getHandler(application.getStringFromSharedPrefs("environment"));

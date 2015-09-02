@@ -39,7 +39,7 @@ public class MySSLSocketFactory extends SSLSocketFactory {
     }
 
 	public MySSLSocketFactory(SSLContext context) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
-        super(null);
+        super(context);
         sslContext = context;
     }
 

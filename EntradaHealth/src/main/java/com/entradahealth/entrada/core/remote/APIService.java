@@ -21,8 +21,6 @@ import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -35,7 +33,6 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.conn.SingleClientConnManager;
@@ -47,14 +44,18 @@ import org.json.JSONObject;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.provider.Settings.Secure;
 import android.util.Log;
 
 import com.entradahealth.entrada.android.R;
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
+import com.entradahealth.entrada.android.app.personal.Environment;
+import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.add_account.Dictator;
+import com.entradahealth.entrada.android.app.personal.activities.add_account.EUser;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.Contact;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTUser;
@@ -62,6 +63,9 @@ import com.entradahealth.entrada.android.app.personal.activities.inbox.models.QB
 import com.entradahealth.entrada.android.app.personal.activities.schedule.model.Resource;
 import com.entradahealth.entrada.android.app.personal.utils.http.HttpPatch;
 import com.entradahealth.entrada.core.auth.Account;
+import com.entradahealth.entrada.core.auth.UserPrivate;
+import com.entradahealth.entrada.core.auth.exceptions.AccountException;
+import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.domain.Dictation;
 import com.entradahealth.entrada.core.domain.Encounter;
 import com.entradahealth.entrada.core.domain.Job;
@@ -70,8 +74,12 @@ import com.entradahealth.entrada.core.domain.Queue;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectProvider;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectWriter;
+import com.entradahealth.entrada.core.domain.providers.MainUserDatabaseProvider;
 import com.entradahealth.entrada.core.domain.retrievers.SyncData;
 import com.entradahealth.entrada.core.domain.senders.UploadData;
+import com.entradahealth.entrada.core.inbox.dao.ENTHandler;
+import com.entradahealth.entrada.core.inbox.dao.ENTHandlerFactory;
+import com.entradahealth.entrada.core.inbox.dao.ENTQBUserHandler;
 import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectReader;
 import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -124,7 +132,7 @@ public class APIService implements RemoteService {
 	    private SSLSocketFactory newSslSocketFactory() {
 	        try {
 	            // Get an instance of the Bouncy Castle KeyStore format
-	            KeyStore trusted = KeyStore.getInstance("BKS");
+/*	            KeyStore trusted = KeyStore.getInstance("BKS");
 	            // Get the raw resource, which contains the keystore with
 	            // your trusted certificates (root and any intermediate certs)
 	            InputStream in = context.getResources().openRawResource(R.raw.mykeystorepem);
@@ -135,9 +143,11 @@ public class APIService implements RemoteService {
 	            } finally {
 	                in.close();
 	            }
-	            // Pass the keystore to the SSLSocketFactory. The factory is responsible
+*/	            KeyStore trusted = KeyStore.getInstance(KeyStore.getDefaultType());
+				trusted.load(null, null);
+	        	// Pass the keystore to the SSLSocketFactory. The factory is responsible
 	            // for the verification of the server certificate.
-	            SSLSocketFactory sf = new SSLSocketFactory(trusted);
+	            SSLSocketFactory sf = new MySSLSocketFactory(trusted);
 	            sf.setHostnameVerifier(new MyHostVerifier());
 	            // Hostname verification from certificate
 	            // http://hc.apache.org/httpcomponents-client-ga/tutorial/html/connmgmt.html#d4e506
@@ -454,8 +464,19 @@ public class APIService implements RemoteService {
 	public static boolean isMappingNeeded=false;
 	public String getClinicalInfo(Long patientId) throws ServiceException {
   		isMappingNeeded=true;
-  		return readRequestObject1(new HttpGet(apiPath("/patients/%s/clinicals",patientId)),
-  				String.class);
+		Log.e("Entrada", "Patient ClinicalInfo request GET Request API url --"+ apiPath("/patients/%s/clinicals", patientId));
+		HttpGet request = new HttpGet(apiPath("/patients/%s/clinicals", patientId)); 
+		HttpResponse response = makeRequest(request);
+		try {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			response.getEntity().writeTo(out);
+			String s = out.toString();
+			Log.e("Entrada", "Patient ClinicalInfo Response--"+s);
+			return s;
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ServiceException("Unable to read HTTP body.", e);
+		}
   	}
 	
 	public String getDemographicInfo(String sessionToken, long patientId) throws ServiceException {
@@ -660,8 +681,8 @@ public class APIService implements RemoteService {
 		
 	}
 
-	public void uploadImages(InputStream data, String checksum, long jobId, 
-			Long dictId, DomainObjectProvider provider, Runnable runAfterUpload, boolean done) throws ServiceException, DomainObjectWriteException {
+	public int uploadImages(InputStream data, String checksum, long jobId, 
+			Long dictId, DomainObjectProvider provider) throws ServiceException, DomainObjectWriteException {
 
 		HttpPost request = new HttpPost(apiPath("/upload/%s/image",
 				dictId));
@@ -675,11 +696,10 @@ public class APIService implements RemoteService {
 		
 		HttpResponse response = makeRequest(request);
 		int statusCode = response.getStatusLine().getStatusCode();
-		/*Log.d(LOG_NAME, String.format("Response = %d %s", statusCode, response
-				.getStatusLine().getReasonPhrase()));*/
+		Log.d(LOG_NAME, String.format("Response = %d %s", statusCode, response
+				.getStatusLine().getReasonPhrase()));
+		return statusCode;
 
-		if (runAfterUpload != null && done)
-			runAfterUpload.run();
 	}
 	
 	public void dictateAPIVersio(){
@@ -915,7 +935,7 @@ public class APIService implements RemoteService {
 		getter.setHeader("SessionToken", sessionToken);
 		Log.e("Entrada", "Get Associated Dictators Request API header -- SessionToken : "+sessionToken);
 		List<Dictator> dictators = new ArrayList<Dictator>();
-		HttpResponse response = makeRequest(getter);
+		HttpResponse response = makeRequest(getter, true, false);
 		try {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			response.getEntity().writeTo(out);
@@ -1132,8 +1152,8 @@ public class APIService implements RemoteService {
 	}
 	
 	public String getPatienInfoSharingPermission(String sessionToken, String threadId) throws ServiceException{
-		Log.e("Entrada", "Patient Info sharing permission request GET Request API url --"+ apiPath("/threads/getpermision/"+threadId));
-		HttpGet getter = new HttpGet(apiPath("/threads/getpermision/"+threadId));
+		Log.e("Entrada", "Patient Info sharing permission request GET Request API url --"+ apiPath("/threads/getpermission/"+threadId));
+		HttpGet getter = new HttpGet(apiPath("/threads/getpermission/"+threadId));
 		getter.setHeader("SessionToken", sessionToken);
 		HttpResponse response = makeRequest(getter);
 		try {
@@ -1379,18 +1399,159 @@ public class APIService implements RemoteService {
 		}
 	}
 
+	protected void reauthenticateOnSessionExpiry(){
+		MainUserDatabaseProvider provider;
+		EntradaApplication application;
+		String apiHost=null, _username=null, _password = null;
+		try {
+			provider = new MainUserDatabaseProvider(false);
+			application = (EntradaApplication) EntradaApplication.getAppContext();
+        	EUser _user = provider.getCurrentUser();
+        	if(_user!=null) {
+	        	EnvironmentHandlerFactory factory = EnvironmentHandlerFactory.getInstance();
+	        	Environment environment = factory.getHandler(_user.getEnvironment());
+	        	application.setStringIntoSharedPrefs("environment", _user.getEnvironment());
+	        	apiHost = environment.getApi();
+	        	_username = _user.getName();
+	        	_password = _user.getPassword();
+	        	APIService svc = new APIService(apiHost, _username, _password);
+	        	String m_androidId = Secure.getString(application.getContentResolver(), Secure.ANDROID_ID);
+	        	String s = svc.authenticate(_username, _password, m_androidId);
+	        	JSONObject json = new JSONObject(s);
+				Log.i("USER_AUTHENTICATE", "USER_AUTHENTICATE--"+s);
+	    		String qbLogin = json.getString("QBLogin");
+	    		String qbPassword = json.getString("QBPassword");
+	    		String sessionToken = json.getString("SessionToken").trim();
+	    		application.setStringIntoSharedPrefs(BundleKeys.SESSION_TOKEN, sessionToken);
+	    		application.setStringIntoSharedPrefs(BundleKeys.TOUVERSION, json.getString("TOUVersionNumber").trim());
+	    		application.setStringIntoSharedPrefs(BundleKeys.USERID, json.getString("UserId").trim());
+	        	// Parsing for permissions
+				String _perStr = json.getString("ModulePermissions");
+				String perStr = _perStr.substring(1, _perStr.length()-1);
+				String[] modulePermissions = perStr.split(",");
+				Boolean joblistPermission = new Boolean(modulePermissions[0]);
+				Boolean secureMessagingPermission = new Boolean(modulePermissions[2]);
+	    		application.setJobListPermission(joblistPermission);
+	    		// Get Dictators, compare and update in database
+	    		List<Dictator> dictatorsFromService = svc.getAssociatedDictators(sessionToken);
+	    		List<Dictator> dictatorsFromDB = provider.getDictatorsForUser(username);
+	    		UserState state = AndroidState.getInstance().getUserState();
+	            UserPrivate u = state.getUserData();
+	            if(dictatorsFromService.size()==0) {
+	            	application.setJobListPermission(false);
+	            }
+	    		// Add dictators
+	            boolean flag = true;
+	    		for(int i=0; i<dictatorsFromService.size(); i++) {
+	    			Dictator i_dic = dictatorsFromService.get(i);
+	    			boolean isExist = false;
+	    			for(int j=0; j<dictatorsFromDB.size(); j++) {
+	    				Dictator j_dic = dictatorsFromDB.get(j);
+	    				if(i_dic.getDictatorID() == j_dic.getDictatorID()){
+	    					isExist = true;
+	    					break;
+	    				}
+	    			}
+	    			if(!isExist){
+	    				if(dictatorsFromDB.size() == 0){
+	    					i_dic.setCurrent(flag);
+	    				}
+	    				provider.addDictator(i_dic, username);
+	    				Log.e("", "Dictator Name--"+i_dic.getDictatorName()+"--username--"+username);
+	    				u.createAccount(String.valueOf(i_dic.getDictatorID()), i_dic.getDictatorName(), i_dic.getDictatorName(), "", apiHost, i_dic.getClinicName(), username, password);
+	    				u.save();
+	    				flag = false;
+	    			}
+	                try
+	                {
+	                    AndroidState.getInstance().clearUserState();
+	                    state = AndroidState.getInstance().getUserState();
+	                }
+	                catch (Exception ex)
+	                {
+	                	ex.printStackTrace();
+	                }
+	    		}
+	    		
+	    		// Delete Dictators
+	    		for(int i=0; i<dictatorsFromDB.size(); i++) {
+	    			Dictator i_dic = dictatorsFromDB.get(i);
+	    			boolean isExist = false;
+	    			for(int j=0; j<dictatorsFromService.size(); j++) {
+	    				Dictator j_dic = dictatorsFromService.get(j);
+	    				if(i_dic.getDictatorID() == j_dic.getDictatorID()){
+	    					isExist = true;
+	    					break;
+	    				}
+	    			}
+	    			if(!isExist){
+	    				boolean isCurrent = i_dic.isCurrent();
+	    				provider.deleteDictator(i_dic);
+	    				if(isCurrent){
+	    				dictatorsFromDB.get(0).setCurrent(true);	
+	    				}
+
+	    			}
+	    		}
+	    		Dictator dictator = provider.getCurrentDictatorForUser(username);
+	    		Long dictatorId = (dictator != null)? dictator.getDictatorID() : 0;
+	    		String dictatorName = (dictator != null)? dictator.getDictatorName() : "";
+				application.setStringIntoSharedPrefs(BundleKeys.DICTATOR_ID, String.valueOf(dictatorId));
+				application.setStringIntoSharedPrefs(BundleKeys.DICTATOR_NAME, dictatorName);
+
+	    		ENTUser user = new ENTUser();
+	    		user.setLogin(qbLogin);
+	    		user.setPassword(qbPassword);
+	    		ENTHandlerFactory handlerFactory = ENTHandlerFactory.createInstance();
+	    		ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBUSER);
+	    		// QB create session
+	    		((ENTQBUserHandler) handler).createSession(user);
+	    		// Login User
+	    		user = ((ENTQBUserHandler) handler).login(user);
+	    		Log.i("","Login User info - "+ user.getId() +" "+ user.getLogin()+" "+user.getName());
+	    		application.setStringIntoSharedPrefs(BundleKeys.CURRENT_QB_USER_ID, user.getId());
+	    		application.setStringIntoSharedPrefs(BundleKeys.CURRENT_QB_LOGIN, user.getLogin());
+	    		application.setStringIntoSharedPrefs(BundleKeys.CURRENT_QB_PASSWORD, qbPassword);
+	    		try {
+	    			state.setSMUser();
+	    			if(dictatorId != 0){
+						AndroidState.getInstance().clearUserState();
+	                    state = AndroidState.getInstance().getUserState();
+	    				state.setCurrentAccount(String.valueOf(dictatorId));
+	    			}
+	    		} catch (DomainObjectWriteException e) {
+	    			e.printStackTrace();
+	    		} catch (AccountException e) {
+	    			e.printStackTrace();
+	    		} catch (InvalidPasswordException e) {
+	    			e.printStackTrace();
+	    		}
+				}
+        } catch(Exception ex){
+        	ex.printStackTrace();
+        }
+
+	}
+	
 	HttpResponse makeRequest(HttpRequest getter) throws ServiceException{
-		return makeRequest(getter, true);
+		return makeRequest(getter, true, true);
 	}
 	
 	HttpResponse makeRequest(HttpRequest getter, boolean needsSessionToken) throws ServiceException {
+		return makeRequest(getter, needsSessionToken, true);
+	}
+	
+	HttpResponse makeRequest(HttpRequest getter, boolean needsSessionToken, boolean needDictator) throws ServiceException {
 		try {
 			Log.d(LOG_NAME, "Performing " + getter.getRequestLine().getMethod()
 					+ " request to " + getter.getRequestLine().getUri());
 			EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
 			getter.setHeader("Host", this.host.getHostName());
-			if(application.getStringFromSharedPrefs(BundleKeys.DICTATOR_ID)!=null && !application.getStringFromSharedPrefs(BundleKeys.DICTATOR_ID).isEmpty() && needsSessionToken){
-				getter.setHeader("dictator", application.getStringFromSharedPrefs(BundleKeys.DICTATOR_ID));
+			if(needDictator) {
+				String dictatorId = application.getStringFromSharedPrefs(BundleKeys.DICTATOR_ID);
+				if(dictatorId!=null && !dictatorId.isEmpty() && Long.valueOf(dictatorId)!=0 && needsSessionToken){
+					getter.setHeader("dictator", dictatorId);
+				}
 			}
 			if(needsSessionToken){
 				getter.setHeader("SessionToken", application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN));
@@ -1406,6 +1567,10 @@ public class APIService implements RemoteService {
 			}
 
 			HttpResponse response = client.execute(host, getter);
+			if(response.getStatusLine().getStatusCode() == 401){
+				reauthenticateOnSessionExpiry();
+				response = client.execute(host, getter);
+			}
 			return response;
 		} catch (IOException e) {
 			throw new ServiceException("Error making HTTP request.", e);

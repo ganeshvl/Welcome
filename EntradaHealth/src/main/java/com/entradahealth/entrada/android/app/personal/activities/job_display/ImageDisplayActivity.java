@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.acra.ACRA;
-import android.app.Activity;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,9 +29,6 @@ import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaActivity;
 import com.entradahealth.entrada.android.app.personal.UserState;
-import com.entradahealth.entrada.android.app.personal.activities.job_display.CaptureImages.AsyncTaskDeleteFiles;
-import com.entradahealth.entrada.android.app.personal.activities.job_display.CaptureImages.AsyncTaskLoadFiles;
-import com.entradahealth.entrada.android.app.personal.activities.user_select.UserSelectActivity;
 import com.entradahealth.entrada.core.auth.UserPrivate;
 
 public class ImageDisplayActivity extends EntradaActivity {
@@ -151,9 +147,8 @@ public class ImageDisplayActivity extends EntradaActivity {
         int width = displayMetrics.widthPixels;
         int height = displayMetrics.heightPixels; 
 		
-		
 		// bmp = BitmapFactory.decodeFile(img_path);
-		bmp = decodeSampledBitmapFromPath(img_path, width, height);
+		bmp = decodeSampledBitmapFromPath(img_path, width/2, height/2);
 		ivDisplayImage.setImageBitmap(bmp);
 
 		if (total >= 5) {

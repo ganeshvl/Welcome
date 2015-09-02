@@ -3,7 +3,6 @@ package com.entradahealth.entrada.android.app.personal;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
-import android.util.Log;
 import android.widget.Toast;
 
 /**
@@ -18,16 +17,20 @@ public abstract class DialogTask<Result> extends AsyncTask<Void, DialogTask.Prog
 
     protected DialogTask(Activity activity, CharSequence title, CharSequence defaultText, boolean isCancelable)
     {
-        this.activity = activity;
-        this.dialog = new ProgressDialog(activity);
-
-        this.dialog.setTitle(title);
-        this.dialog.setMessage(defaultText);
-        this.dialog.setIndeterminate(true);
-        this.dialog.setCancelable(isCancelable);
-        this.dialog.setCanceledOnTouchOutside(false);
-
-        this.dialog.show();
+    	this.activity = activity;
+    	try {
+	        this.dialog = new ProgressDialog(activity);
+	
+	        this.dialog.setTitle(title);
+	        this.dialog.setMessage(defaultText);
+	        this.dialog.setIndeterminate(true);
+	        this.dialog.setCancelable(isCancelable);
+	        this.dialog.setCanceledOnTouchOutside(false);
+	
+	        this.dialog.show();
+    	} catch(Exception ex){
+    		
+    	}
     }
 
     public ProgressDialog getDialog()
@@ -60,7 +63,11 @@ public abstract class DialogTask<Result> extends AsyncTask<Void, DialogTask.Prog
         }
         else
         {
-            this.dialog.setMessage(update.content);
+        	try {
+        		this.dialog.setMessage(update.content);
+        	} catch(Exception ex){
+        		
+        	}
         }
     }
 
@@ -68,7 +75,11 @@ public abstract class DialogTask<Result> extends AsyncTask<Void, DialogTask.Prog
     protected void onPostExecute(Result result)
     {
         super.onPostExecute(result);
-        this.dialog.hide();
+        try {
+        	this.dialog.hide();
+        } catch(Exception ex){
+        	
+        }
     }
 
     public static class ProgressUpdate

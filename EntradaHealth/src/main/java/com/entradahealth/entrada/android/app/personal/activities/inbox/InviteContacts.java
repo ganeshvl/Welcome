@@ -61,9 +61,9 @@ public class InviteContacts extends Fragment {
 		Log.e("onCreate", "called");
 		state = AndroidState.getInstance().getUserState();
 		application = (EntradaApplication) EntradaApplication.getAppContext();
-		synchronized (state) {
+//		synchronized (state) {
 			currentAccount = state.getCurrentAccount();
-		}
+//		}
 	}
 	
 	@Override

@@ -113,8 +113,15 @@ public class PatientSearchFrament extends Fragment {
 	            	//Log.e("p", p.toString());
 	            }
 	        });
-	        doSearch();
+
 		return view;
+	}
+	
+	@Override
+	public void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+        doSearch();
 	}
 	
 	private void doSearch()
@@ -177,8 +184,8 @@ public class PatientSearchFrament extends Fragment {
 
 	        UserState state = AndroidState.getInstance().getUserState();
 
-	        synchronized (state)
-	        {
+	        //synchronized (state)
+	        //{
 	            Account account = state.getCurrentAccount();
 	            if(account != null){
 		            DomainObjectReader reader = state.getProvider(account);
@@ -193,7 +200,7 @@ public class PatientSearchFrament extends Fragment {
 	            } else {
 	            	return ImmutableList.copyOf(new ArrayList<Patient>());
 	            }
-	        }
+	        //}
 	    }
 
 	    @Override

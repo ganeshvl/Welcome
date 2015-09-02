@@ -30,4 +30,7 @@
         <item name="android:windowEnterAnimation">@anim/slide_up_dialog</item>
         <item name="android:windowExitAnimation">@anim/slide_out_down</item>
     </style>
+    <style name="EntradaTheme"
+           parent="android:Theme.DeviceDefault.Light">
+    </style>
 </resources>

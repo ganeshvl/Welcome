@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -42,6 +43,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -50,6 +52,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
@@ -58,13 +61,13 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ExpandableListView;
-import android.widget.ExpandableListView.OnChildClickListener;
-import android.widget.ExpandableListView.OnGroupClickListener;
-import android.widget.ExpandableListView.OnGroupCollapseListener;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.RelativeLayout.LayoutParams;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -73,8 +76,8 @@ import com.entradahealth.entrada.android.R;
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.DialogTask;
-import com.entradahealth.entrada.android.app.personal.EntradaActivity;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
+import com.entradahealth.entrada.android.app.personal.EntradaFragmentActivity;
 import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.add_account.AddAccountActivity;
@@ -83,7 +86,7 @@ import com.entradahealth.entrada.android.app.personal.activities.add_account.EUs
 import com.entradahealth.entrada.android.app.personal.activities.edit_account.EditAccountActivity;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.UserAuthenticate;
 import com.entradahealth.entrada.android.app.personal.activities.pin_entry.PinEntryActivity;
-import com.entradahealth.entrada.android.app.personal.activities.user_select.UserSelectActivity;
+import com.entradahealth.entrada.android.app.personal.activities.pin_entry.PinEntryFragment;
 import com.entradahealth.entrada.android.app.personal.files.AndroidFileResolver;
 import com.entradahealth.entrada.android.app.personal.utils.AndroidUtils;
 import com.entradahealth.entrada.android.app.personal.utils.NetworkState;
@@ -93,7 +96,9 @@ import com.entradahealth.entrada.core.auth.UserPrivate;
 import com.entradahealth.entrada.core.auth.exceptions.AccountException;
 import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.auth.exceptions.UserLoadException;
+import com.entradahealth.entrada.core.domain.Job;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
+import com.entradahealth.entrada.core.domain.providers.DomainObjectWriter;
 import com.entradahealth.entrada.core.domain.providers.MainUserDatabaseProvider;
 import com.entradahealth.entrada.core.files.FileResolver;
 import com.entradahealth.entrada.core.remote.APIService;
@@ -102,9 +107,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-public class EntradaSettings extends EntradaActivity {
+public class EntradaSettings extends EntradaFragmentActivity {
 	
-	ExpandableListView lvUsers;
+	private static final String LOG_NAME = "EntradaSettings";
+	private ExpandableListView lvUsers;
 	private ImmutableList<User> users = null;
 	SharedPreferences sp;
 	Menu j_Menu;
@@ -136,11 +142,17 @@ public class EntradaSettings extends EntradaActivity {
 	private ExpandableListAdapter adapter;
 	UserPrivate userPrivate;
 	UserState state;
+	private FrameLayout frameLayout;
+	private ScrollView settingsLayout;
+	private boolean launchedAddAccountScreen = false;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.entrada_settings);
+		frameLayout = (FrameLayout) findViewById(R.id.fragcontent);
+		settingsLayout = (ScrollView) findViewById(R.id.settings);
 		context = this;
 		try {
 			sp = getSharedPreferences("Entrada", Context.MODE_WORLD_READABLE);
@@ -184,7 +196,8 @@ public class EntradaSettings extends EntradaActivity {
 				ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
 	    	    for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
 	    	        if ("com.entradahealth.entrada.android.app.personal.sync.SyncService".equals(service.service.getClassName()) ||
-	    	        		"com.entradahealth.entrada.android.app.personal.sync.DictationUploadService".equals(service.service.getClassName())) {
+	    	        		"com.entradahealth.entrada.android.app.personal.sync.DictationUploadService".equals(service.service.getClassName()) || 
+	    	        		"com.entradahealth.entrada.core.inbox.service.SaveMessagesContentService".equals(service.service.getClassName())) {
 	    	            running = true;
 	    	        }
 	    	    }
@@ -193,7 +206,7 @@ public class EntradaSettings extends EntradaActivity {
 					createUser(1);
 				else
 					Toast.makeText(EntradaSettings.this,
-	                         "Please wait until the current account has finished syncing to add account.",
+	                         "Please wait for your previous selection to load.",
 	                         Toast.LENGTH_SHORT).show();
 				
 			}
@@ -210,7 +223,15 @@ public class EntradaSettings extends EntradaActivity {
 		});
 		
 		rlSecureMessaging = (RelativeLayout)findViewById(R.id.rlSecureMessaging);
-		
+		String environment = application.getStringFromSharedPrefs("environment");
+		if(environment.equals(EnvironmentHandlerFactory.PROD)){
+      		rlSecureMessaging.setVisibility(View.GONE);
+      		BundleKeys.SECURE_MSG = true;
+      	}else{
+      		rlSecureMessaging.setVisibility(View.VISIBLE);
+      		BundleKeys.SECURE_MSG = false;
+      	}        
+
 		tbBluetooth = (ToggleButton)findViewById(R.id.tbBluetooth);
 		final BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();   
 		if(mBluetoothAdapter.isEnabled()){
@@ -481,7 +502,152 @@ public class EntradaSettings extends EntradaActivity {
 	        setListViewHeight(lvUsers);
 		}
 	}
+	
+	AlertDialog dgClearDictator;
+	protected void onChildLongClick(EUser user, final Dictator dictator){
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure?").setTitle("Clear Dictator");
+        builder.setCancelable(false);
+        	builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+    			
+    			@Override
+    			public void onClick(DialogInterface dialog, int which) {
+    				// TODO Auto-generated method stub
+    				dgClearDictator.dismiss();
+    				boolean canClear = true;
+    				Account editingAccount = AndroidState.getInstance().getUserState().getAccount(String.valueOf(dictator.getDictatorID()));
+    				List<Job> jobs = AndroidState.getInstance().getUserState()
+                            .getProvider(editingAccount).getJobs();
+
+    				for (Job j : jobs)
+    				{
+    					if(j.isFlagSet(Job.Flags.HOLD) && !j.isFlagSet(Job.Flags.LOCALLY_DELETED) || (!BundleKeys.SYNC_AFTER_DELETE))
+    						canClear = false;	
+    				}
+    				
+    				if(canClear){
+    					UserState state = AndroidState.getInstance().getUserState();
+    					DomainObjectWriter writer = state.getProvider(state.getCurrentAccount());
+    		        	try {
+    		        			writer.clearJobs();
+    							AlertDialog.Builder builder = new AlertDialog.Builder(context);
+    					        builder.setTitle(R.string.title_success);
+    					        builder.setMessage(R.string.clear_all_jobs);
+    					        builder.setPositiveButton("OK", null);
+    					        builder.show();
+    					        BundleKeys.IS_CLEAR = true;
+    				            //BundleKeys.IS_FIRST_SYNC = true;
+    				            Log.e(LOG_NAME, "Cleared all jobs successfully");
+    				            
+    				            
+    					} catch (DomainObjectWriteException e) {
+    						// TODO Auto-generated catch block
+    						e.printStackTrace();
+    						Log.e(LOG_NAME, "Clear all jobs failed due to some error");
+    						AlertDialog.Builder builder = new AlertDialog.Builder(context);
+    				        builder.setTitle(R.string.title_error);
+    				        builder.setMessage(R.string.clear_all_jobs_error);
+    				        builder.setPositiveButton("OK", null);
+    				        builder.show();
+    					}
+    				}else{
+    					Log.e(LOG_NAME, "Clear all jobs failed due to local changes");
+    					AlertDialog.Builder builder = new AlertDialog.Builder(context);
+    			        builder.setTitle(R.string.title_error);
+    			        builder.setMessage(R.string.clear_jobs_error);
+    			        builder.setPositiveButton("OK", null);
+    			        builder.show();
+    				}
+    			}
+    		});
+            builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+    			
+    			@Override
+    			public void onClick(DialogInterface dialog, int which) {
+    				// TODO Auto-generated method stub
+    				dgClearDictator.dismiss();
+    			}
+    		});
+
+                
+        dgClearDictator = builder.create();
+        dgClearDictator.show();
+	}
+
+	AlertDialog dgdeleteUser;
+	protected void onGroupLongClick(final EUser user){
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Are you sure?").setTitle("Delete User");
+        builder.setCancelable(false);
+        	builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+    			
+    			@Override
+    			public void onClick(DialogInterface dialog, int which) {
+    				// TODO Auto-generated method stub
+    				dgdeleteUser.dismiss();
+    				new DeleteUserTask(user).execute();
+    			}
+    		});
+            builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+    			
+    			@Override
+    			public void onClick(DialogInterface dialog, int which) {
+    				// TODO Auto-generated method stub
+    				dgdeleteUser.dismiss();
+    			}
+    		});
+
+                
+        dgdeleteUser = builder.create();
+        dgdeleteUser.show();
+	}
+
+	class DeleteUserTask extends DialogTask<Boolean>{
+
+		private EUser user;
 		
+		public DeleteUserTask(EUser user){
+			super((Activity) context, "Deleting User", "Please wait...", false);
+			this.user = user;
+		}
+
+		@Override
+		protected Boolean doInBackground(Void... params) {
+			UserState state = AndroidState.getInstance().getUserState();
+			try {
+				UserPrivate userPrivate = state.getUserData();
+				userPrivate.deleteUser(user.getQbUserName());
+				MainUserDatabaseProvider provider = new MainUserDatabaseProvider(false);
+				List<Dictator> dictators = provider.getDictatorsForUser(user.getName());
+				for(Dictator dictator : dictators){
+					userPrivate.deleteAccount(String.valueOf(dictator.getDictatorID()));
+				}
+				userPrivate.save();
+				provider.deleteUserAndDictators(user);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (DomainObjectWriteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AccountException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(Boolean result) {
+			// TODO Auto-generated method stub
+			super.onPostExecute(result);
+			new LoadUserDictatorsAsyncTask().execute();
+		}
+	}
+	
 	class AuthenticateUser extends UserAuthenticate{
 
 		private List<EUser> eUsers;
@@ -504,9 +670,6 @@ public class EntradaSettings extends EntradaActivity {
 		@Override
 		protected void onPreExecute() {
 			super.onPreExecute();
-			application.setStringIntoSharedPrefs(BundleKeys.DICTATOR_ID, dictatorId);
-			application.setStringIntoSharedPrefs(BundleKeys.DICTATOR_NAME, dictatorName);
-
 		}
 		
 		@Override
@@ -568,18 +731,23 @@ public class EntradaSettings extends EntradaActivity {
             // navigate directly to AddAccountActivity
             Intent intent = new Intent(EntradaSettings.this, AddAccountActivity.class);
         	//Intent intent = new Intent(this.activity, Setup.class);
-			intent.putExtra("from_settings", true);
 			intent.putExtra("user_name", uname);
 			intent.putExtra("from_settings", true);
 			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			startActivity(intent);
+			launchedAddAccountScreen = true;
 	    }
 	}
 	
 	@Override
 	public void onBackPressed() {
 		// TODO Auto-generated method stub
-   	 	saveChanges(sel_acc, sp.getString("PIN_SAVED", "1111"));
+		android.support.v4.app.Fragment pinFragment = getSupportFragmentManager().findFragmentByTag("pin");
+		if(pinFragment==null){
+			getSupportFragmentManager().popBackStack();
+	   	 	saveChanges(sel_acc, sp.getString("PIN_SAVED", "1111"));
+		}
+
 	}
 	
 	File userPath;
@@ -588,6 +756,7 @@ public class EntradaSettings extends EntradaActivity {
 	protected void onStart() {
 		// TODO Auto-generated method stub
 		super.onStart();
+		launchedAddAccountScreen = false;
 		isEmail = false;
 		deleted = getIntent().getBooleanExtra("deleted", false);
 		qchanged = getIntent().getBooleanExtra("qchanged", false);
@@ -613,11 +782,11 @@ public class EntradaSettings extends EntradaActivity {
 	        }
 			
 			UserState state = AndroidState.getInstance().getUserState();
-	        synchronized (state)
-	        {
+	       // synchronized (state)
+	        //{
 	            accounts = Lists.newArrayList(state.getAccounts());
 	            
-	        }
+	       // }
 			
 	        getAccountForUser(0, true);
 		}else{
@@ -1034,7 +1203,8 @@ public class EntradaSettings extends EntradaActivity {
 		int totalHeight = 0;
 		for (int i = 0; i < listAdapter.getCount(); i++) {
 		View listItem = listAdapter.getView(i, null, listView);
-		listItem.measure(0, 0);
+		listItem.setLayoutParams(new LayoutParams(0,0));	       
+		listItem.measure(0,0);
 		totalHeight += listItem.getMeasuredHeight();
 		}
 		ViewGroup.LayoutParams params = listView.getLayoutParams();
@@ -1104,7 +1274,7 @@ public class EntradaSettings extends EntradaActivity {
                 	startActivity(new Intent(this, PinEntryActivity.class).putExtra(BundleKeys.SELECTED_USER, uname).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
                 	return;
             	}
-                synchronized (us){
+                //synchronized (us){
 	                if (us != null)
 	                {
 	                    UserPrivate up = us.getUserData();
@@ -1119,7 +1289,7 @@ public class EntradaSettings extends EntradaActivity {
 	                    	curUser = us.getUserData();
 	                    }
 	                }
-                }
+               // }
                 user = User.getPublicUserInformation(uname);
                 
             }
@@ -1152,11 +1322,11 @@ public class EntradaSettings extends EntradaActivity {
 		//Get account name associated with the current user
 		
 		UserState state = AndroidState.getInstance().getUserState();
-        synchronized (state)
-        {
+        //synchronized (state)
+        //{
             accounts = Lists.newArrayList(state.getAccounts());
             
-        }
+        //}
         if(!isReload){
         	if( ! accounts.isEmpty())
             	str_arr_acc_names.add(state.getCurrentAccount());
@@ -1193,14 +1363,16 @@ public class EntradaSettings extends EntradaActivity {
 //                new AccountListItemAdapter(this, android.R.layout.simple_list_item_1, str_arr_acc_names);
        // updateListViewHeight(lvUsers);
       //Hide Secure Messaging option for PROD User
-/*        if(BundleKeys.CURR_ACCOUNT.getApiHost().equalsIgnoreCase("dictateapi.entradahealth.net")){
+        //if(BundleKeys.CURR_ACCOUNT.getApiHost().equalsIgnoreCase("dictateapi.entradahealth.net")){
+		String environment = application.getStringFromSharedPrefs("environment");
+		if(environment.equals(EnvironmentHandlerFactory.PROD)){
       		rlSecureMessaging.setVisibility(View.GONE);
       		BundleKeys.SECURE_MSG = true;
       	}else{
       		rlSecureMessaging.setVisibility(View.VISIBLE);
       		BundleKeys.SECURE_MSG = false;
       	}        
-*/	}
+	}
 	
 	public static void updateListViewHeight(ListView myListView) {
 	     ListAdapter myListAdapter = myListView.getAdapter();
@@ -1553,12 +1725,27 @@ public class EntradaSettings extends EntradaActivity {
 		//if(!isEmail)
 			//finish();
 	}
+
 	
 	@Override
 	protected void onRestart() {
 		// TODO Auto-generated method stub
 		super.onRestart();
 		//startActivity(new Intent(this, UserSelectActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
+		if(!launchedAddAccountScreen) {
+			settingsLayout.setVisibility(View.GONE);
+			frameLayout.setVisibility(View.VISIBLE);
+			BundleKeys.cur_uname = sp.getString("CUR_UNAME", null);
+			Bundle b = new Bundle();
+			b.putString(BundleKeys.SELECTED_USER,
+					sp.getString("sel_user", null));
+			b.putBoolean(BundleKeys.FROM_SETTINGS, true);
+			PinEntryFragment pinFragment = new PinEntryFragment();
+			pinFragment.setArguments(b);
+			FragmentTransaction ft = getSupportFragmentManager().beginTransaction().addToBackStack(null);
+			ft.replace(R.id.fragcontent, pinFragment, "pin");
+			ft.commitAllowingStateLoss();
+		}
 	}
 	
 	private UserPrivate currentUser;
@@ -1614,8 +1801,8 @@ public class EntradaSettings extends EntradaActivity {
 	    @Override
 	    public View getChildView(int groupPosition, final int childPosition,
 	            boolean isLastChild, View convertView, ViewGroup parent) {
-	    	EUser user = (EUser) getGroup(groupPosition);
-	        Dictator dictator = (Dictator) getChild(groupPosition, childPosition);
+	    	final EUser user = (EUser) getGroup(groupPosition);
+	        final Dictator dictator = (Dictator) getChild(groupPosition, childPosition);
 	        if (convertView == null) {
 	            LayoutInflater infalInflater = (LayoutInflater) this._context
 	                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -1624,15 +1811,19 @@ public class EntradaSettings extends EntradaActivity {
 	        if(user.isCurrent()){
 	        	convertView.setBackgroundColor(getResources().getColor(R.color.selecteduser_background_color));
 	        }
+	    	convertView.setOnLongClickListener(new OnLongClickListener() {
+				
+				@Override
+				public boolean onLongClick(View arg0) {
+					onChildLongClick(user, dictator);
+					return false;
+				}
+			});
+	    	convertView.setOnClickListener(new ItemClickListener(user, dictator));
 	        TextView txtListChild = (TextView) convertView.findViewById(R.id.lblListItem);
-	        ImageView arrow = (ImageView) convertView.findViewById(R.id.arrow);
-	        TextView dictatortv = (TextView) convertView.findViewById(R.id.dictator);
 	        ImageView editDictator = (ImageView) convertView.findViewById(R.id.editDictator);
 	        
 	        txtListChild.setText(dictator.getDictatorName());
-	        txtListChild.setOnClickListener(new ItemClickListener(user, dictator));
-	        arrow.setOnClickListener(new ItemClickListener(user, dictator));
-	        dictatortv.setOnClickListener(new ItemClickListener(user, dictator));
 	        editDictator.setOnClickListener(new EditClickListener(user,dictator));
 	        if(user.isCurrent() && dictator.isCurrent()) {
 	        	txtListChild.setTypeface(txtListChild.getTypeface(), Typeface.BOLD);
@@ -1652,51 +1843,96 @@ public class EntradaSettings extends EntradaActivity {
 
 			@Override
 			public void onClick(View v) {
-				EnvironmentHandlerFactory factory = EnvironmentHandlerFactory
-						.getInstance();
-				MainUserDatabaseProvider provider;
-				try {
-					provider = new MainUserDatabaseProvider(false);
-					if (!user.isCurrent()) {
-						application.setStringIntoSharedPrefs("environment",
-								user.getEnvironment());
-						com.entradahealth.entrada.android.app.personal.Environment environment = factory
-								.getHandler(user.getEnvironment());
-						UserAuthenticate authenticateUserTask = new AuthenticateUser(
-								provider, _listDataHeader,
-								_listDataChild.get(user),
-								String.valueOf(dictator.getDictatorID()),
-								dictator.getDictatorName(),
-								environment.getApi(), user.getName(),
-								user.getPassword(), (Activity) context);
-						authenticateUserTask.execute();
-					} else {
-						state.setCurrentAccount(String.valueOf(dictator.getDictatorID()));
-						application.setStringIntoSharedPrefs(
-								BundleKeys.DICTATOR_ID,
-								String.valueOf(dictator.getDictatorID()));
-						application.setStringIntoSharedPrefs(
-								BundleKeys.DICTATOR_NAME,
-								dictator.getDictatorName());
-						for (Dictator _dictator : _listDataChild.get(user)) {
-							try {
-								if (_dictator.getDictatorID() == Long
-										.valueOf(dictator.getDictatorID())) {
-									_dictator.setCurrent(true);
-								} else {
-									_dictator.setCurrent(false);
+				boolean dictatorRunning = false; 
+				ProgressDialog dialog = new ProgressDialog(context);
+				dialog.setCancelable(false);
+	    		if(dialog != null){
+					dialog.show();
+					dialog.setContentView(R.layout.progress_spinner_only);
+	    		}
+				running = false;
+				ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+	    	    for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+	    	        if ("com.entradahealth.entrada.android.app.personal.sync.SyncService".equals(service.service.getClassName()) ||
+	    	        		"com.entradahealth.entrada.android.app.personal.sync.DictationUploadService".equals(service.service.getClassName()) || 
+	    	        		"com.entradahealth.entrada.core.inbox.service.SaveMessagesContentService".equals(service.service.getClassName())) {
+	    	            running = true;
+	    	        }
+	    	    }
+	    	    
+	    	    for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+	    	        if ("com.entradahealth.entrada.android.app.personal.sync.SyncService".equals(service.service.getClassName()) ||
+	    	        		"com.entradahealth.entrada.android.app.personal.sync.DictationUploadService".equals(service.service.getClassName())) {
+	    	        	dictatorRunning = true;
+	    	        }
+	    	    }
+				
+					EnvironmentHandlerFactory factory = EnvironmentHandlerFactory
+							.getInstance();
+					MainUserDatabaseProvider provider;
+					try {
+						provider = new MainUserDatabaseProvider(false);
+						if (!user.isCurrent()) {
+							if(!running){
+							application.setStringIntoSharedPrefs("environment",
+									user.getEnvironment());
+							com.entradahealth.entrada.android.app.personal.Environment environment = factory
+									.getHandler(user.getEnvironment());
+							UserAuthenticate authenticateUserTask = new AuthenticateUser(
+									provider, _listDataHeader,
+									_listDataChild.get(user),
+									String.valueOf(dictator.getDictatorID()),
+									dictator.getDictatorName(),
+									environment.getApi(), user.getName(),
+									user.getPassword(), (Activity) context);
+							authenticateUserTask.execute();
+							} else {
+								Toast.makeText(EntradaSettings.this,
+				                         "Please wait for your previous selection to load.",
+				                         Toast.LENGTH_SHORT).show();
+							}
+						} else {
+							if(!dictatorRunning) {
+								application.setStringIntoSharedPrefs(
+										BundleKeys.DICTATOR_ID,
+										String.valueOf(dictator.getDictatorID()));
+								application.setStringIntoSharedPrefs(
+										BundleKeys.DICTATOR_NAME,
+										dictator.getDictatorName());
+								AndroidState.getInstance().clearUserState();
+			                    state = AndroidState.getInstance().getUserState();
+								state.setCurrentAccount(String.valueOf(dictator.getDictatorID()));
+								for (Dictator _dictator : _listDataChild.get(user)) {
+									try {
+										if (_dictator.getDictatorID() == Long
+												.valueOf(dictator.getDictatorID())) {
+											_dictator.setCurrent(true);
+										} else {
+											_dictator.setCurrent(false);
+										}
+										provider.updateDictator(_dictator,
+												user.getName());
+									} catch (DomainObjectWriteException e) {
+										e.printStackTrace();
+									}
 								}
-								provider.updateDictator(_dictator,
-										user.getName());
-							} catch (DomainObjectWriteException e) {
-								e.printStackTrace();
+								new LoadUserDictatorsAsyncTask().execute();
+							}  else {
+								Toast.makeText(EntradaSettings.this,
+				                         "Please wait for your previous selection to load.",
+				                         Toast.LENGTH_SHORT).show();
 							}
 						}
-						new LoadUserDictatorsAsyncTask().execute();
+					} catch (DomainObjectWriteException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
 					}
-				} catch (DomainObjectWriteException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+
+				
+				if(dialog != null){
+					if(dialog.isShowing()){
+					dialog.dismiss();
+					}
 				}
 			}
 	    }
@@ -1734,7 +1970,6 @@ public class EntradaSettings extends EntradaActivity {
 	    	
 	    }
 	    
-	    
 	    class GroupItemClickListener implements OnClickListener{
 
 	    	private EUser user;
@@ -1745,36 +1980,53 @@ public class EntradaSettings extends EntradaActivity {
 
 			@Override
 			public void onClick(View v) {
-				EnvironmentHandlerFactory factory = EnvironmentHandlerFactory
-						.getInstance();
-				MainUserDatabaseProvider provider;
-				try {
-					provider = new MainUserDatabaseProvider(false);
-					if (!user.isCurrent()) {
-						application.setStringIntoSharedPrefs("environment",
-								user.getEnvironment());
-						com.entradahealth.entrada.android.app.personal.Environment environment = factory
-								.getHandler(user.getEnvironment());
-						long dictatorId = 0;
-						String dictatorName = null; 
-						Dictator dictator = provider.getCurrentDictatorForUser(user.getName());
-						if(dictator != null){
-							dictatorId = dictator.getDictatorID();
-							dictatorName = dictator.getDictatorName();
+				running = false;
+				ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+	    	    for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+	    	        if ("com.entradahealth.entrada.android.app.personal.sync.SyncService".equals(service.service.getClassName()) ||
+	    	        		"com.entradahealth.entrada.android.app.personal.sync.DictationUploadService".equals(service.service.getClassName()) || 
+	    	        		"com.entradahealth.entrada.core.inbox.service.SaveMessagesContentService".equals(service.service.getClassName())) {
+	    	            running = true;
+	    	        }
+	    	    }
+				
+				if(!running) {
+					EnvironmentHandlerFactory factory = EnvironmentHandlerFactory
+							.getInstance();
+					MainUserDatabaseProvider provider;
+					try {
+						provider = new MainUserDatabaseProvider(false);
+						if (!user.isCurrent()) {
+							application.setStringIntoSharedPrefs("environment",
+									user.getEnvironment());
+							com.entradahealth.entrada.android.app.personal.Environment environment = factory
+									.getHandler(user.getEnvironment());
+							long dictatorId = 0;
+							String dictatorName = null; 
+							Dictator dictator = provider.getCurrentDictatorForUser(user.getName());
+							if(dictator != null){
+								dictatorId = dictator.getDictatorID();
+								dictatorName = dictator.getDictatorName();
+							}
+							UserAuthenticate authenticateUserTask = new AuthenticateUser(
+									provider, _listDataHeader,
+									_listDataChild.get(user),
+									String.valueOf(dictatorId),
+									dictatorName,
+									environment.getApi(), user.getName(),
+									user.getPassword(), (Activity) context);
+							authenticateUserTask.execute();
 						}
-						UserAuthenticate authenticateUserTask = new AuthenticateUser(
-								provider, _listDataHeader,
-								_listDataChild.get(user),
-								String.valueOf(dictatorId),
-								dictatorName,
-								environment.getApi(), user.getName(),
-								user.getPassword(), (Activity) context);
-						authenticateUserTask.execute();
+					} catch (DomainObjectWriteException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
 					}
-				} catch (DomainObjectWriteException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+				} else {
+					Toast.makeText(EntradaSettings.this,
+	                         "Please wait for your previous selection to load.",
+	                         Toast.LENGTH_SHORT).show();
 				}
+
 			}
 	    }
 	    
@@ -1801,7 +2053,7 @@ public class EntradaSettings extends EntradaActivity {
 	    @Override
 	    public View getGroupView(int groupPosition, boolean isExpanded,
 	            View convertView, ViewGroup parent) {
-	        EUser user = (EUser) getGroup(groupPosition);
+	        final EUser user = (EUser) getGroup(groupPosition);
 	        if (convertView == null) {
 	            LayoutInflater infalInflater = (LayoutInflater) this._context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	            convertView = infalInflater.inflate(R.layout.user_dictator_group, null);
@@ -1809,12 +2061,28 @@ public class EntradaSettings extends EntradaActivity {
 	        if(user.isCurrent()){
 	        	convertView.setBackgroundColor(getResources().getColor(R.color.selecteduser_background_color));
 	        }
+	        convertView.setOnLongClickListener(new OnLongClickListener() {
+				
+				@Override
+				public boolean onLongClick(View v) {
+					if(user.isCurrent()) {
+						AlertDialog.Builder builder = new AlertDialog.Builder(context);
+						builder.setTitle(null);
+						builder.setMessage(R.string.cannotdeleteuser_message);
+						builder.setPositiveButton("OK", null);
+						builder.setCancelable(false);
+						AlertDialog dialog = builder.create();
+						dialog.show();
+					} else {
+						onGroupLongClick(user);
+					}
+					return false;
+				}
+			});
+	        convertView.setOnClickListener(new GroupItemClickListener(user));
 	        TextView lblListHeader = (TextView) convertView.findViewById(R.id.lblListHeader);
 	        lblListHeader.setTypeface(null, Typeface.BOLD);
 	        lblListHeader.setText(user.getName()+"("+user.getEnvironment()+")");
-	        lblListHeader.setOnClickListener(new GroupItemClickListener(user));
-	        TextView userText = (TextView) convertView.findViewById(R.id.usertext);
-	        userText.setOnClickListener(new GroupItemClickListener(user));
 	        lvUsers.expandGroup(groupPosition);
 	        return convertView;
 	    }
@@ -1835,5 +2103,10 @@ public class EntradaSettings extends EntradaActivity {
 		// TODO Auto-generated method stub
 		super.onTrimMemory(level);
 		finish();
+	}
+	
+	public void sucessfulPinEntry(){
+		settingsLayout.setVisibility(View.VISIBLE);
+		frameLayout.setVisibility(View.GONE);
 	}
 }

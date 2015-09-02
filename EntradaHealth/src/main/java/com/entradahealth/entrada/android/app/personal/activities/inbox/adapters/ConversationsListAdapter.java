@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jivesoftware.smack.SmackException.NotConnectedException;
+import org.jivesoftware.smack.XMPPException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,22 +37,22 @@ import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.NewMessageFragment;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
+import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTUser;
 import com.entradahealth.entrada.android.app.widget.BaseSwipeListViewListener;
 import com.entradahealth.entrada.android.app.widget.SwipeListView;
-import com.entradahealth.entrada.core.auth.Account;
-import com.entradahealth.entrada.core.auth.exceptions.AccountException;
-import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
-import com.entradahealth.entrada.core.domain.providers.DomainObjectReader;
 import com.entradahealth.entrada.core.inbox.dao.ENTHandler;
 import com.entradahealth.entrada.core.inbox.dao.ENTHandlerFactory;
 import com.entradahealth.entrada.core.inbox.dao.ENTQBConversationHandler;
 import com.entradahealth.entrada.core.inbox.dao.ENTQBUserHandler;
+import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectReader;
 import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectWriter;
+import com.entradahealth.entrada.core.inbox.service.GroupChatManagerImpl;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
+import com.quickblox.core.QBEntityCallbackImpl;
 
 public class ConversationsListAdapter extends BaseAdapter {
 
@@ -62,11 +64,19 @@ public class ConversationsListAdapter extends BaseAdapter {
 	private int previousItem = -1;
 	private EntradaApplication application;
 	private APIService service;
+	private String delOpenConId;
+	private SMDomainObjectReader reader;
+	private SMDomainObjectWriter writer;
+	private UserState state;
+
 
 	public ConversationsListAdapter(Context context,
 			List<ENTConversation> _conversations, SwipeListView _listView, final FragmentManager manager) {
 		this.activity = (Activity) context;
 		application = (EntradaApplication) EntradaApplication.getAppContext();
+		state = AndroidState.getInstance().getUserState();
+		reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+		writer = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
 		EnvironmentHandlerFactory envFactory = EnvironmentHandlerFactory.getInstance();
 		Environment env = envFactory.getHandler(application.getStringFromSharedPrefs("environment"));
 		try {
@@ -99,7 +109,9 @@ public class ConversationsListAdapter extends BaseAdapter {
 
             @Override
             public void onStartOpen(int position, int action, boolean right) {
-                Log.d("swipe", String.format("onStartOpen %d - action %d", position, action));                
+                Log.d("swipe", String.format("onStartOpen %d - action %d", position, action));
+                ENTConversation con = conversations.get(position);
+                delOpenConId = con.getId();
                 activity.findViewById(R.id.moreoptions).setVisibility(View.GONE);
                	previousItem = currentItem;
                	currentItem = position;
@@ -126,7 +138,6 @@ public class ConversationsListAdapter extends BaseAdapter {
     			closePreviousRow();			     
         		Bundle b = new Bundle();
         		b.putSerializable("conversation", conversations.get(position));
-        		//b.putString("patient_name", (conversations.get(position).getName().equals("NO NAME")) ? null :conversations.get(position).getName());
         		b.putString("patient_name", null);
             	BundleKeys.CURRENT_CONVERSATION = conversations.get(position);
         		NewMessageFragment msgFragment = new NewMessageFragment();
@@ -166,7 +177,19 @@ public class ConversationsListAdapter extends BaseAdapter {
 		public void onClick(View v) {
 			if(application.is3GOr4GConnected() || application.isWifiConnected()) {
 				listView.closeAnimate(position);
-				new DeleteConversationTask(conversations.get(position)).execute();
+				final ENTConversation con = conversations.get(position);
+				final GroupChatManagerImpl chat = new GroupChatManagerImpl(activity);
+				chat.joinGroupChat(con, new QBEntityCallbackImpl() {
+	                @Override
+	                public void onSuccess() {
+	                	new DeleteConversationTask(con, chat).execute();
+	                }
+
+	                @Override
+	                public void onError(List list) {
+	                }
+	            });
+				
 				conversations.remove(position);
 				setConversations(conversations);
 			}
@@ -176,17 +199,45 @@ public class ConversationsListAdapter extends BaseAdapter {
 	
 	class DeleteConversationTask extends AsyncTask{
 		
-		ENTConversation conversation;
+		private ENTConversation conversation;
+		private GroupChatManagerImpl chat;
+		private String passPhrase;
 		
-		DeleteConversationTask(ENTConversation conversation){
+		DeleteConversationTask(ENTConversation conversation, GroupChatManagerImpl chat){
 			this.conversation = conversation;
+			this.chat = chat;
 		}
 
 		@Override
 		protected Object doInBackground(Object... params) {
-			ENTHandlerFactory handlerFactory = ENTHandlerFactory.getInstance();
-			ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBCONVERSATION);
-			((ENTQBConversationHandler) handler).deleteDialog(conversation);
+			ENTMessage entmessage = new ENTMessage();
+			ENTUser user = getENTUserFromId(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID));
+			entmessage.setMessage(user.getName()+" has left.");
+			entmessage.setCustomString("1");
+			entmessage.setChatDialogId(conversation.getId());
+			passPhrase = application.getPassPhrase(conversation.getId());
+			try {
+				if(passPhrase==null){
+					passPhrase = service.getMessageThreadDetails(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation.getId());
+				}
+				entmessage.setPassPhrase(passPhrase);
+				chat.sendMessage(entmessage);
+				ENTHandlerFactory handlerFactory = ENTHandlerFactory.getInstance();
+				ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBCONVERSATION);
+				((ENTQBConversationHandler) handler).deleteDialog(conversation);
+				chat.release();
+			} catch (NotConnectedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (XMPPException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ServiceException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e){
+				e.printStackTrace();
+			}
 			return null;
 		}
 		
@@ -300,21 +351,14 @@ public class ConversationsListAdapter extends BaseAdapter {
 	private void updateView(int contentType, int position, ViewHolder holder) {
 		ENTConversation c = conversations.get(position);
 		if (contentType == 1) {
-			UserState state = AndroidState.getInstance().getUserState();
-			Account account = state.getCurrentAccount();
 			Patient patient = null;
-			if(account != null) {
-				DomainObjectReader reader = state.getProvider(account);
 				patient = reader.getPatient(c.getPatientID());
 				if(patient==null){
-					new GetPatientDemographicInfo(c.getPatientID(), c).execute();
+					new GetPatientDemographicInfo(c.getPatientID(), c, holder).execute();
+				} else {
+					String patient_name = (patient!=null) ? (patient.getFirstName() + " " + patient.getLastName()) : "Loading Patient..";
+					holder.patientName.setText(patient_name);
 				}
-				//String recipient_name = (patient!=null && patient.getFullName()!=null) ? patient.getFullName() : String.valueOf(c.getPatientID());
-				String recipient_name = (patient!=null) ? (patient.getFirstName() + " " + patient.getLastName()) : "Loading Patient..";
-				holder.patientName.setText(recipient_name);
-			} else {
-				new GetPatientDemographicInfo(c.getPatientID(),c, holder).execute();	
-			}
 		} 	
 		holder.lastmessage.setText(c.getLastMessage());
 		EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
@@ -336,6 +380,7 @@ public class ConversationsListAdapter extends BaseAdapter {
 			}
 		}
 		holder.recepient.setText(recipient);
+		c.setUnreadMessagesCount(reader.getConversationUnreadMessagesCount(c.getId()));
 		if (c.getUnreadMessagesCount() == 0) {
 			holder.unreadMessagesCount.setVisibility(View.GONE);
 		} else {
@@ -349,6 +394,9 @@ public class ConversationsListAdapter extends BaseAdapter {
 		holder.lastmessageDate.setText(formattedDate);
 		holder.delete.setOnClickListener(new DelClickListener(position));
 		holder.more.setOnClickListener(new MoreClickListener(position));
+//		if(delOpenConId!= null && c.getId().equals(delOpenConId)) {
+//			listView.openAnimate(position);
+//		}
 	}
 
 	@Override
@@ -414,17 +462,7 @@ public class ConversationsListAdapter extends BaseAdapter {
 
 		@Override
 		protected Object doInBackground(Object... arg0) {
-			UserState state = AndroidState.getInstance().getUserState();
-			Account account = state.getCurrentAccount();
-			if(account!=null){
-	            DomainObjectReader reader = state.getProvider(account);
-				Patient p = reader.getPatientDemographicInfo(patientId);
-				if(p==null){
-					getPatientDemographicInfo();
-				}
-			} else {
-				getPatientDemographicInfo();
-			}
+			getPatientDemographicInfo();
 			return null;
 		}
 
@@ -433,10 +471,15 @@ public class ConversationsListAdapter extends BaseAdapter {
 				String response = service.getDemographicInfo(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation.getId(), patientId);
 				JSONObject json = new JSONObject(response);
 				patientName = json.getString("FirstName")+ " " +json.getString("LastName");
+				Patient p = new Patient(json.getLong("PatientID"), json.getString("MRN"), json.getString("FirstName"), json.getString("MI"), json.getString("LastName"), json.getString("DOB"), json.getString("Gender"), json.getString("AlternateID"), json.getString("Address1"), json.getString("Address2"), json.getString("City"), json.getString("State"), json.getString("Zip"), json.getString("Phone1"));
+				writer.writePatient(p);
 			} catch (JSONException e) {
 				e.printStackTrace();
 				patientName = String.valueOf(patientId);
 			} catch (ServiceException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (DomainObjectWriteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -468,21 +511,10 @@ public class ConversationsListAdapter extends BaseAdapter {
 			ENTUser user = ((ENTQBUserHandler) handler).getUser(userId);
 			UserState state = AndroidState.getInstance().getUserState();
 			EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
-			try {
-				state.setSMUser();
-			} catch (DomainObjectWriteException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (AccountException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (InvalidPasswordException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
 			SMDomainObjectWriter writer = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
 			try {
 				writer.addBuddy(user);
+				BundleKeys.QB_Users.add(user);
 			} catch (DomainObjectWriteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -511,5 +543,13 @@ public class ConversationsListAdapter extends BaseAdapter {
 		} else {
 			return new String[0];
 		}
+	}
+	
+	public void setDelOpenConvId(String convId){
+		delOpenConId = convId;
+	}
+	
+	public String getDelOpenConvId(){
+		return delOpenConId;
 	}
 }

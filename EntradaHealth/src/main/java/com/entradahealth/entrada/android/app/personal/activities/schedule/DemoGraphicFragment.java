@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 import android.app.Activity;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -199,7 +199,9 @@ public class DemoGraphicFragment extends Fragment {
 		@Override
 		protected void onPostExecute(Patient patient) {
 			super.onPostExecute(patient);
-
+			if(dialog.isShowing()){
+				dialog.dismiss();
+			}
 			if(patient != null){ // Close the dialog
 				setpatientData(patient);
 			}else{

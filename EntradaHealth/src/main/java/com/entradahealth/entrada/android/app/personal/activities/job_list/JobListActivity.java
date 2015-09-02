@@ -66,7 +66,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
 import com.entradahealth.entrada.android.R;
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
@@ -95,6 +94,7 @@ import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectProvider;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectReader;
+import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectReader;
 import com.entradahealth.entrada.core.inbox.service.NewConversationBroadcastService;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
@@ -187,27 +187,18 @@ public class JobListActivity extends SlidingActivity {
 		
 		//Sample icon badger on Action bar item
 		badge = new BadgeView(this, ivInbox);
-		badge.setText(String.valueOf(application.getIntFromSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT)));
-		badge.setBadgePosition(BadgeView.POSITION_TOP_RIGHT);
-		if(application.getIntFromSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT)>0)
-			badge.show();
-		else 
-			badge.hide();
-		
-		if(!application.isJobListEnabled()){
+		if(BundleKeys.fromSecureMessaging || !application.isJobListEnabled()){
 			startActivity(new Intent(JobListActivity.this, SecureMessaging.class));
 			finish();
 		}
 		
-		if(BundleKeys.fromSecureMessaging) {
-			startActivity(new Intent(JobListActivity.this, SecureMessaging.class));
-		}
 		ivInbox.setOnClickListener(new OnClickListener() {
 			
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
 				startActivity(new Intent(JobListActivity.this, SecureMessaging.class));
+				finish();
 			}
 		});
 		
@@ -320,6 +311,7 @@ public class JobListActivity extends SlidingActivity {
 			@Override
 			public void onClick(View v) {
 				startActivity(new Intent(JobListActivity.this, ScheduleActivity.class));
+				finish();
 			}
 		});
 		
@@ -1111,7 +1103,18 @@ public class JobListActivity extends SlidingActivity {
 		if(!application.isJobListEnabled()){
 			return;
 		}
+		UserState state = AndroidState.getInstance().getUserState();
+		SMDomainObjectReader reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+		int count = reader.getUnreadMessagesCount();
+		badge.setText(String.valueOf(count));
+		badge.setBadgePosition(BadgeView.POSITION_TOP_RIGHT);
+		if(count>0)
+			badge.show();
+		else 
+			badge.hide();
+
 		registerReceiver(conbroadcastReceiver, new IntentFilter(NewConversationBroadcastService.BROADCAST_COUNTUPDATE_ACTION));
+		registerReceiver(messagebroadcastReceiver, new IntentFilter(NewConversationBroadcastService.BROADCAST_ACTION));
 		LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, new IntentFilter("my-event"));
 		ns = new NetworkState(getApplicationContext());
 		isConnected = ns.isConnectingToInternet();
@@ -1348,6 +1351,7 @@ public class JobListActivity extends SlidingActivity {
 			return;
 		}
 		unregisterReceiver(conbroadcastReceiver);
+		unregisterReceiver(messagebroadcastReceiver);
 		LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
 		super.onPause();
 		if (refreshTask != null) {
@@ -1363,15 +1367,36 @@ public class JobListActivity extends SlidingActivity {
 	    @Override
 	    public void onReceive(Context context, Intent intent) {
 			// Icon badger on Action bar item
-
-			badge.setText(String.valueOf(application.getIntFromSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT)));
-			if(application.getIntFromSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT)>0)
-				badge.show();
-			else 
-				badge.hide();
+	    	try {
+				badge.setText(String.valueOf(application.getIntFromSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT)));
+				if(application.getIntFromSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT)>0)
+					badge.show();
+				else 
+					badge.hide();
+		    } catch(Exception ex){
+		    	ex.printStackTrace();
+		    }
 	    }
 	};  
 
+	private BroadcastReceiver messagebroadcastReceiver = new BroadcastReceiver() {
+	    @Override
+	    public void onReceive(Context context, Intent intent) {
+			// Icon badger on Action bar item
+			UserState state = AndroidState.getInstance().getUserState();
+			SMDomainObjectReader reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+			int count = reader.getUnreadMessagesCount();
+			try {
+				badge.setText(count);
+				if(count>0)
+					badge.show();
+				else 
+					badge.hide();
+			} catch(Exception ex){
+				ex.printStackTrace();
+			}
+	    }
+	};  
 
 	boolean isResumed = false;
 	boolean running;
@@ -1778,11 +1803,10 @@ public class JobListActivity extends SlidingActivity {
 		public int compare(Job lhs, Job rhs) {
 			try
             {
-                Account acct = AndroidState.getInstance().getUserState().getCurrentAccount();
+/*              Account acct = AndroidState.getInstance().getUserState().getCurrentAccount();
                 state = AndroidState.getInstance().getUserState();
                 reader = state.getProvider(acct);
-                
-                
+
                 Encounter left = AndroidState.getInstance()
                         .getUserState()
                         .getProvider(acct)
@@ -1790,10 +1814,10 @@ public class JobListActivity extends SlidingActivity {
                 Encounter right = AndroidState.getInstance()
                         .getUserState()
                         .getProvider(acct)
-                        .getEncounter(rhs.encounterId);
+                        .getEncounter(rhs.encounterId);*/
                 
-    	    	String Lstring = left.getDateTimeText().trim();
-    	    	String Rstring = right.getDateTimeText().trim();
+    	    	String Lstring = application.getEncounter(lhs.encounterId).getDateTimeText().trim();
+    	    	String Rstring = application.getEncounter(rhs.encounterId).getDateTimeText().trim();
     	    	
     	    	Date ldate = null, rdate = null;
     	    	DateFormat date = null;
@@ -1808,24 +1832,24 @@ public class JobListActivity extends SlidingActivity {
                 }
                 
                 
-                if(genericPatient!= null && !isNotValidLong(genericPatient.id) && !isNotValidLong(left.patientId) && 
-             		   !isNotValidLong(right.patientId) && date != null && ldate != null && rdate != null &&
-             		   left != null && left.appointmentDate != null && right != null && right.appointmentDate != null) {
+                if(genericPatient!= null && !isNotValidLong(genericPatient.id) && !isNotValidLong(application.getEncounter(lhs.encounterId).patientId) && 
+             		   !isNotValidLong(application.getEncounter(rhs.encounterId).patientId) && date != null && ldate != null && rdate != null &&
+             				  application.getEncounter(lhs.encounterId) != null && application.getEncounter(lhs.encounterId).appointmentDate != null && application.getEncounter(rhs.encounterId) != null && application.getEncounter(rhs.encounterId).appointmentDate != null) {
              	   
-             	   if(left.patientId == genericPatient.id && right.patientId == genericPatient.id){
-                    		if(left != null && left.appointmentDate != null && right != null && right.appointmentDate != null){
-                 			int genComp = left.appointmentDate.compareTo(right.appointmentDate);
+             	   if(application.getEncounter(lhs.encounterId).patientId == genericPatient.id && application.getEncounter(rhs.encounterId).patientId == genericPatient.id){
+                    		if(application.getEncounter(lhs.encounterId) != null && application.getEncounter(lhs.encounterId).appointmentDate != null && application.getEncounter(rhs.encounterId) != null && application.getEncounter(rhs.encounterId).appointmentDate != null){
+                 			int genComp = application.getEncounter(lhs.encounterId).appointmentDate.compareTo(application.getEncounter(rhs.encounterId).appointmentDate);
                          	if(genComp == 0){
-                 				return (left.appointmentDate.compareTo(right.appointmentDate));
+                 				return (application.getEncounter(lhs.encounterId).appointmentDate.compareTo(application.getEncounter(rhs.encounterId).appointmentDate));
                  			}else{
-                 				return -(left.appointmentDate.compareTo(right.appointmentDate));
+                 				return -(application.getEncounter(lhs.encounterId).appointmentDate.compareTo(application.getEncounter(rhs.encounterId).appointmentDate));
                  			}
                  		}
-                    	}
-             	   	if( left.patientId == genericPatient.id && right.patientId != genericPatient.id){
+                    }
+             	   	if( application.getEncounter(lhs.encounterId).patientId == genericPatient.id && application.getEncounter(rhs.encounterId).patientId != genericPatient.id){
                  		return -1;
                  	}
-                    	if(right.patientId == genericPatient.id && left.patientId != genericPatient.id){
+                    	if(application.getEncounter(rhs.encounterId).patientId == genericPatient.id && application.getEncounter(lhs.encounterId).patientId != genericPatient.id){
                  		return 1;
                  	}
                  
@@ -1833,16 +1857,16 @@ public class JobListActivity extends SlidingActivity {
                  		return 0;
                  	}
                      if(date.format(ldate).compareTo(date.format(rdate)) == 0){ //both dates are equal, (ldate.compareTo(rdate)>0)..ldate is after rdate, (ldate.compareTo(rdate)<0)..ldate is before rdate
-                     	if(left == null || left.appointmentDate == null || right == null || right.appointmentDate == null){
+                     	if(application.getEncounter(lhs.encounterId) == null || application.getEncounter(lhs.encounterId).appointmentDate == null || application.getEncounter(rhs.encounterId) == null || application.getEncounter(rhs.encounterId).appointmentDate == null){
                      		return 0;
                      	}
-                     	return (left.appointmentDate.compareTo(right.appointmentDate));
+                     	return (application.getEncounter(lhs.encounterId).appointmentDate.compareTo(application.getEncounter(rhs.encounterId).appointmentDate));
          			}else{
-         				if(left == null || left.appointmentDate == null || right == null || right.appointmentDate == null){
+         				if(application.getEncounter(lhs.encounterId) == null || application.getEncounter(lhs.encounterId).appointmentDate == null || application.getEncounter(rhs.encounterId) == null || application.getEncounter(rhs.encounterId).appointmentDate == null){
                      		return 0;
                      	}
-                     	return -(left.appointmentDate.compareTo(right.appointmentDate));
-                     }
+                     	return -(application.getEncounter(lhs.encounterId).appointmentDate.compareTo(application.getEncounter(rhs.encounterId).appointmentDate));
+                    }
                  }else{
                  	return -1;
                  }
@@ -1896,8 +1920,8 @@ public class JobListActivity extends SlidingActivity {
 	protected void onRestart() {
 		// TODO Auto-generated method stub
 		super.onRestart();
-		//startActivity(new Intent(this, UserSelectActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
-		//finish();
+		startActivity(new Intent(this, UserSelectActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
+		finish();
 	}
 	
 	@Override

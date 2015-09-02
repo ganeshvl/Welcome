@@ -1,5 +1,7 @@
 package com.entradahealth.entrada.core.auth;
 
+import android.util.Log;
+
 import com.entradahealth.entrada.core.auth.exceptions.AccountException;
 import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.auth.exceptions.UserLoadException;
@@ -18,6 +20,9 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 import javax.crypto.Cipher;
+
+import org.h2.tools.DeleteDbFiles;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -194,9 +199,14 @@ public class UserPrivate extends User
 
     public void deleteAccount(Account deletedAccount) throws AccountException, FileNotFoundException
     {
-        accounts.remove(deletedAccount.getName());
+        deleteAccount(deletedAccount.getName());
+    }
+    
+    public void deleteAccount(String deletedAccount) throws AccountException, FileNotFoundException
+    {
+        accounts.remove(deletedAccount);
 
-        File accountDir = new File(getUserAccountsDir(), deletedAccount.getName());
+        File accountDir = new File(getUserAccountsDir(), deletedAccount);
 
         if (!accountDir.exists())
         {
@@ -206,9 +216,12 @@ public class UserPrivate extends User
 
         FileUtils.deleteRecursive(accountDir);
     }
+    
     public void deleteUser(String user) throws FileNotFoundException{
-    	File userDir = getUserDirectory(user);
-    	FileUtils.deleteRecursive(userDir);
+    		try{
+    			DeleteDbFiles.execute(getUserRoot().getAbsolutePath(), "user_"+user, true);
+    		} catch(Exception ex){
+    		}
     }
     
     public void renameFile(String user) throws FileNotFoundException{
@@ -279,7 +292,7 @@ public class UserPrivate extends User
     
     public File getUserAccountsDir()
     {
-        return new File(getUserDirectory(name), "accounts");
+        return new File(getUserDirectory("User_1"), "accounts");
     }
 
     static UserPrivate buildUser(User userBase, String password) throws IOException

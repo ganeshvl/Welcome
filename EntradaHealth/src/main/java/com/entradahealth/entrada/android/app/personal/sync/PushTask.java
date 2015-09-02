@@ -57,8 +57,8 @@ public class PushTask extends DialogTask<List<Account>> {
 
         List<Account> result = new LinkedList<Account>();
 
-        synchronized (userState)
-        {
+      //  synchronized (userState)
+        //{
             for (Account account : userState.getAccounts())
             {
                 try
@@ -103,7 +103,7 @@ public class PushTask extends DialogTask<List<Account>> {
                             ". Please contact support if this persists.";
                 }
             }
-        }
+       // }
 
         return result;
     }

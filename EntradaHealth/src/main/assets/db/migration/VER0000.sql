@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS EUser
 	Password varchar(255) NOT NULL,
 	Environment varchar(255) NOT NULL,
 	CurrentDictator varchar(255) NOT NULL,	
-	IsCurrent boolean NOT NULL
+	IsCurrent boolean NOT NULL,
+	QBUserName varchar(255) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Dictator
@@ -21,22 +22,3 @@ CREATE TABLE IF NOT EXISTS Dictator
 	Username varchar(255) NOT NULL,
 	IsCurrent boolean NOT NULL,
 );
-
-CREATE TABLE IF NOT EXISTS ResourceNames
-(
-	ResourceID varchar(255) NOT NULL PRIMARY KEY,
-	ResourceName varchar(255) NOT NULL,
-	
-);
-
-CREATE TABLE IF NOT EXISTS Schedule
-(
-	ScheduleID bigint NOT NULL PRIMARY KEY,
-	AppointmentStatus bigint NOT NULL,
-	PatientID bigint NOT NULL,
-	JobId varchar(255) NULL,
-	ReasonName varchar(255) NOT NULL,
-	ResourceID varchar(255) NOT NULL,
-	AppointmentDate varchar(255) NOT NULL,
-); 
-

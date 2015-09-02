@@ -91,20 +91,6 @@ public class SMContacts extends Fragment{
 		BundleKeys.fromSecureMessaging = false;
 		application = (EntradaApplication) EntradaApplication.getAppContext();
 		m_androidId = Secure.getString(getActivity().getContentResolver(), Secure.ANDROID_ID);
-		UserState state = AndroidState.getInstance().getUserState();
-		try {
-			state.setSMUser();
-		} catch (DomainObjectWriteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (AccountException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidPasswordException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 		Bundle bundle = this.getArguments();
 		if(bundle != null){
 			patient_name = bundle.getString("patient_name"); 
@@ -203,14 +189,22 @@ public class SMContacts extends Fragment{
 	class LoadQBUsers extends AsyncTask{
 
 		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+		}
+		
+		@Override
 		protected Object doInBackground(Object... params) {
 			try {
-				UserState state = AndroidState.getInstance().getUserState();
 				EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
-				SMDomainObjectReader reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
-				BundleKeys.QB_Users = reader.getBuddies();
-				
-				BundleKeys.QB_Users.addAll(reader.getPendingInvites());
+				if(BundleKeys.QB_Users == null) {
+					UserState state = AndroidState.getInstance().getUserState();
+					SMDomainObjectReader reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+					BundleKeys.QB_Users = new ArrayList<ENTUser>();
+					BundleKeys.QB_Users.addAll(reader.getBuddies());
+					BundleKeys.QB_Users.addAll(reader.getPendingInvites());
+				}
 				for (ENTUser user : BundleKeys.QB_Users) {
 					if(!application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID).equals(user.getId())){
 						Contact c = new Contact(Contact.ITEM, user.getName(), user.getId());
@@ -264,9 +258,7 @@ public class SMContacts extends Fragment{
     		if(sel_no!=null && !sel_no.isEmpty()) {
     			NewMessageFragment msgFragment = new NewMessageFragment();
     			msgFragment.setArguments(b);
-    			FragmentTransaction ft = getFragmentManager().beginTransaction().addToBackStack(null);
-    			ft.replace(R.id.fragcontent, msgFragment, null);
-    			ft.commit();
+    			getFragmentManager().beginTransaction().replace(R.id.fragcontent, msgFragment, null).addToBackStack(null).commit();
     		}
 		}
 	}
@@ -431,11 +423,16 @@ public class SMContacts extends Fragment{
 	        		b.putString("patient_name", patient_name);
 	        		b.putLong("patient_id", patient_id);
 	        		b.putBoolean("fromRecordingScreen", fromRecordingScreen);
+	        		FragmentTransaction ft = getFragmentManager().beginTransaction();
+	        		if(fromRecordingScreen) {
+		        		Fragment frg = getFragmentManager().findFragmentByTag("contacts");
+		        		ft.remove(frg);
+	        		} else {
+	        			getFragmentManager().popBackStack();
+	        		}
 	        		NewMessageFragment msgFragment = new NewMessageFragment();
 	        		msgFragment.setArguments(b);
-	        		FragmentTransaction ft = getFragmentManager().beginTransaction().addToBackStack(null);
-	        		ft.replace(R.id.fragcontent, msgFragment, null);
-	        		ft.commit();		        		
+	        		ft.replace(R.id.fragcontent, msgFragment, null).addToBackStack(null).commit();
                 	break;
                 case R.id.item_add_to_favorite:
                 	nr = 0;
@@ -570,11 +567,16 @@ public class SMContacts extends Fragment{
 	        		b.putString("patient_name", patient_name);
 	        		b.putLong("patient_id", patient_id);
 	        		b.putBoolean("fromRecordingScreen", fromRecordingScreen);
+	        		FragmentTransaction ft = getFragmentManager().beginTransaction();
+	        		if(fromRecordingScreen) {
+		        		Fragment frg = getFragmentManager().findFragmentByTag("contacts");
+		        		ft.remove(frg);
+	        		} else {
+	        			getFragmentManager().popBackStack();
+	        		}
 	        		NewMessageFragment msgFragment = new NewMessageFragment();
 	        		msgFragment.setArguments(b);
-	        		FragmentTransaction ft = getFragmentManager().beginTransaction().addToBackStack(null);
-	        		ft.replace(R.id.fragcontent, msgFragment, null);
-	        		ft.commit();		        		
+	        		ft.replace(R.id.fragcontent, msgFragment, null).addToBackStack(null).commit();
                 	break;
                 	
                 case R.id.item_remove_contacts:

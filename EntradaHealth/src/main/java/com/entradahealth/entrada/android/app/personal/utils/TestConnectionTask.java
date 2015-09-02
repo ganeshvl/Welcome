@@ -86,8 +86,6 @@ public class TestConnectionTask extends DialogTask<Boolean>
     	application = (EntradaApplication) EntradaApplication.getAppContext();
 	}
 
-
-
 	@Override
     protected Boolean doInBackground(Void... voids)
     {
@@ -106,7 +104,7 @@ public class TestConnectionTask extends DialogTask<Boolean>
                                                    "clinic network.");
             }
             MainUserDatabaseProvider provider = new MainUserDatabaseProvider();
-			EUser _user = new EUser(username,"", environment,"",false);
+			EUser _user = new EUser(username,"", environment,"",false, "");
 			if(provider.isUserExists(_user)){
 				progress(ProgressUpdateType.TOAST, "Account already added.");
 				return false;
@@ -122,7 +120,7 @@ public class TestConnectionTask extends DialogTask<Boolean>
 	            Log.i("Entrada-AddAccount", "All test groovy.");
 	            progress(ProgressUpdateType.TOAST,
 	                     "Connection test worked! You are all set.");
-
+	            String qbLogin = json.getString("QBLogin");
 	        	// Parsing for permissions
 				String _perStr = json.getString("ModulePermissions");
 				String perStr = _perStr.substring(1, _perStr.length()-1);
@@ -130,7 +128,7 @@ public class TestConnectionTask extends DialogTask<Boolean>
 				Boolean joblistPermission = new Boolean(modulePermissions[0]);
 				Boolean secureMessagingPermission = new Boolean(modulePermissions[2]);
 				application.setJobListPermission(joblistPermission);
-				if(joblistPermission) {
+				//if(joblistPermission) {
 	            
 		            dictators = svc.getAssociatedDictators(sessionToken);
 		            Log.e("", "Dictators.size()--"+dictators.size());
@@ -140,15 +138,15 @@ public class TestConnectionTask extends DialogTask<Boolean>
 			            provider.addDictator(dictator, username);
 			            flag = false;
 					}
-				} else {
-					dictators = new ArrayList<Dictator>();
-				}
+				//} else {
+				//	dictators = new ArrayList<Dictator>();
+				//}
 	            List<EUser> users = provider.getEUsers();
 	            for (EUser user : users) {
 	            	user.setCurrent(false);
 					provider.updateUser(user);
 				}		            
-	            EUser user = new EUser(username, password, environment, (dictators.size()>0)? String.valueOf(dictators.get(0).getDictatorID()) : "", true);
+	            EUser user = new EUser(username, password, environment, (dictators.size()>0)? String.valueOf(dictators.get(0).getDictatorID()) : "", true, qbLogin);
 	            application.setStringIntoSharedPrefs(BundleKeys.DICTATOR_ID, (dictators.size()>0)? String.valueOf(dictators.get(0).getDictatorID()) : "");
 	            application.setStringIntoSharedPrefs(BundleKeys.DICTATOR_NAME, (dictators.size()>0)?String.valueOf(dictators.get(0).getDictatorName()) : "");
 	            provider.addUser(user);
@@ -163,6 +161,7 @@ public class TestConnectionTask extends DialogTask<Boolean>
         }
         catch (Exception ex)
         {
+        	authFailFlag = true;
             progress(ProgressUpdateType.TOAST,
             		"Authentication failure. Please check your clinic code, username and password.");
             ACRA.getErrorReporter().handleSilentException(ex);
@@ -175,7 +174,11 @@ public class TestConnectionTask extends DialogTask<Boolean>
     protected void onPostExecute(Boolean result) {
     	// TODO Auto-generated method stub
     	super.onPostExecute(result);
-    	this.dialog.dismiss();
+    	try {
+    		this.dialog.dismiss();
+    	} catch(Exception ex){
+    		ex.printStackTrace();
+    	}
     	if(result){
     		if(!isEdit){
     			//CreateAccountTask task = new CreateAccountTask(this._activity, apiHost, clinicCode, displayName, username, password, smUsername, smPassword);

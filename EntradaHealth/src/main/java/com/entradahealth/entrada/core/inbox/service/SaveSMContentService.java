@@ -50,6 +50,8 @@ public class SaveSMContentService extends IntentService {
 					SaveMessagesContentService.saveConversationMessages(conversation);
 				}
 			}
+		} catch(Exception ex){
+			ex.printStackTrace();
 		} finally {
 			running = false;
 		}

@@ -36,6 +36,7 @@ import com.entradahealth.entrada.android.app.personal.activities.inbox.models.EN
 import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.domain.Encounter;
 import com.entradahealth.entrada.core.domain.Job;
+import com.entradahealth.entrada.core.domain.Job.Flags;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectReader;
 import com.google.common.collect.Lists;
 
@@ -135,7 +136,13 @@ public class ChooseImagesFragment extends Fragment {
 								if(acct_folders[i].getName().trim().equals(String.valueOf(job_id))){
 									job_folders = acct_folders[i].listFiles();
 									for (int j = 0; j < job_folders.length; j++) {
-										if(job_folders[j].isDirectory() && job_folders[j].getName().trim().equalsIgnoreCase("temp")){
+										String subpath = "Images";
+										if(job.isFlagSet(Flags.IS_FIRST)){
+											subpath = "Images";
+										} else {
+											subpath = "temp";
+										}
+										if(job_folders[j].isDirectory() && job_folders[j].getName().trim().equalsIgnoreCase(subpath)){
 											img_folders = job_folders[j].listFiles();
 											if(img_folders.length > 0)
 												hasImages = true;

@@ -12,7 +12,6 @@ import java.util.List;
 
 import org.acra.ACRA;
 import org.apache.commons.io.FileUtils;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,7 +37,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.Vibrator;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.DisplayMetrics;
@@ -93,10 +91,10 @@ import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteExcepti
 import com.entradahealth.entrada.core.domain.providers.DomainObjectProvider;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectReader;
 import com.entradahealth.entrada.core.remote.APIService;
+import com.google.common.collect.ImmutableList;
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.OnClosedListener;
 import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu.OnOpenedListener;
-import com.jeremyfeinstein.slidingmenu.lib.app.SlidingActivity;
 import com.jeremyfeinstein.slidingmenu.lib.app.SlidingFragmentActivity;
 import com.viewpagerindicator.CirclePageIndicator;
 import com.viewpagerindicator.PageIndicator;
@@ -513,6 +511,7 @@ public class JobDisplayActivity extends SlidingFragmentActivity implements OnCli
 				
       			@Override
 				public void onClick(View v) {
+      				llpat.setClickable(false);
       				if(Boolean.parseBoolean(account.getSetting(AccountSettingKeys.PATIENT_CLINICALS))){
 	      				if(clinicInfoDisplayed){
 					DisplayMetrics dp=new DisplayMetrics();
@@ -540,6 +539,7 @@ public class JobDisplayActivity extends SlidingFragmentActivity implements OnCli
 			        	}
 					}
 				}
+					llpat.setClickable(true);
 	      				}else{
 	      					PatientInfoAysncTask patclinicalTask = new PatientInfoAysncTask();
 	      		            patclinicalTask.execute();
@@ -1300,15 +1300,16 @@ public class JobDisplayActivity extends SlidingFragmentActivity implements OnCli
         
         List<JobType> myJobTypes = new ArrayList<JobType>();
 		BundleKeys.myJobTypes = new ArrayList<JobType>();
-		for (int i = 0; i < provider.getJobTypes().size(); i++) {
+		ImmutableList<JobType> jTypes = provider.getJobTypes();
+		for (int i = 0; i < jTypes.size(); i++) {
 			if(job.isFlagSet(Flags.LOCALLY_CREATED)){
-				if (!Boolean.parseBoolean(provider.getJobTypes().get(i).disable)) {
-					myJobTypes.add(provider.getJobTypes().get(i));
-					BundleKeys.myJobTypes.add(provider.getJobTypes().get(i));
+				if (!Boolean.parseBoolean(jTypes.get(i).disable)) {
+					myJobTypes.add(jTypes.get(i));
+					BundleKeys.myJobTypes.add(jTypes.get(i));
 				}
 			}else{
-				myJobTypes.add(provider.getJobTypes().get(i));
-				BundleKeys.myJobTypes.add(provider.getJobTypes().get(i));
+				myJobTypes.add(jTypes.get(i));
+				BundleKeys.myJobTypes.add(jTypes.get(i));
 			}
 		}
 		
@@ -1338,7 +1339,7 @@ public class JobDisplayActivity extends SlidingFragmentActivity implements OnCli
     private class PatientInfoAysncTask extends AsyncTask<Void, Void, String>{
     	
     	protected void onPostExecute(String result) {
-    		
+    		llpat.setClickable(true);
     		if(!result.contains("exceptionjobdisplay") && result.startsWith("{")){
     			clinicInfoDisplayed = true;
     			try {
@@ -1353,10 +1354,10 @@ public class JobDisplayActivity extends SlidingFragmentActivity implements OnCli
 					mIndicator.setViewPager(mPager);					
 					Log.e("key and pairs in result-->"+js.names().length(),""+js.length());
 					}
-				} catch (JSONException e) {
+				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
+				} 
     			
     			DisplayMetrics dp=new DisplayMetrics();
 		    	getWindowManager().getDefaultDisplay().getMetrics(dp);
@@ -1740,15 +1741,16 @@ public class JobDisplayActivity extends SlidingFragmentActivity implements OnCli
 		
 		List<JobType> myJobTypes = new ArrayList<JobType>();
 		BundleKeys.myJobTypes = new ArrayList<JobType>();
-		for (int i = 0; i < provider.getJobTypes().size(); i++) {
+		ImmutableList<JobType> jTypes = provider.getJobTypes();
+		for (int i = 0; i < jTypes.size(); i++) {
 			if(job.isFlagSet(Flags.LOCALLY_CREATED)){
-				if (!Boolean.parseBoolean(provider.getJobTypes().get(i).disable)) {
-					myJobTypes.add(provider.getJobTypes().get(i));
-					BundleKeys.myJobTypes.add(provider.getJobTypes().get(i));
+				if (!Boolean.parseBoolean(jTypes.get(i).disable)) {
+					myJobTypes.add(jTypes.get(i));
+					BundleKeys.myJobTypes.add(jTypes.get(i));
 				}
 			}else{
-				myJobTypes.add(provider.getJobTypes().get(i));
-				BundleKeys.myJobTypes.add(provider.getJobTypes().get(i));
+				myJobTypes.add(jTypes.get(i));
+				BundleKeys.myJobTypes.add(jTypes.get(i));
 			}
 		}
 		

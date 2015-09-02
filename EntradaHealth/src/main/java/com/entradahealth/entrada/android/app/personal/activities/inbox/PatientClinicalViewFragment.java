@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.entradahealth.entrada.android.R;
@@ -51,6 +52,8 @@ public class PatientClinicalViewFragment extends Fragment {
     private EntradaApplication application;
     private ENTConversation conversation;
     private APIService service;
+    private View view;
+    private ProgressBar progressBar;
     
 	public PatientClinicalViewFragment(NewMessageFragment fragment) {
 		this.fragment = fragment;  
@@ -60,15 +63,37 @@ public class PatientClinicalViewFragment extends Fragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		application = (EntradaApplication) EntradaApplication.getAppContext();
+		Bundle bundle = this.getArguments();		
+		patient_id = bundle.getLong("patient_id");
+		conversation = (ENTConversation) bundle.getSerializable("conversation");
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
 		getActivity().getActionBar().setTitle("Patient");
 		getActivity().getActionBar().setDisplayUseLogoEnabled(true);
 		getActivity().getActionBar().setDisplayShowHomeEnabled(true);
 		getActivity().getActionBar().setDisplayShowTitleEnabled(true);
 		getActivity().getActionBar().setDisplayShowCustomEnabled(false);
-		Bundle bundle = this.getArguments();		
-		patient_id = bundle.getLong("patient_id");
-		conversation = (ENTConversation) bundle.getSerializable("conversation");
-	}
+		state = AndroidState.getInstance().getUserState();
+		currentAccount = state.getCurrentAccount();
+		progressBar.setVisibility(View.VISIBLE);
+		if(currentAccount != null){
+			reader = state.getProvider(currentAccount);
+			this.patient = reader.getPatient(patient_id);
+			if(patient!=null) {
+				renderView(view);
+			} else {
+				new GetPatientDemographics(view).execute();	
+			}
+		} else {
+			if(conversation!=null){
+				new GetPatientDemographics(view).execute();
+			}
+		}
+		
+	};
 
 	@Override
 	public void onStart() {
@@ -87,21 +112,10 @@ public class PatientClinicalViewFragment extends Fragment {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		View view = inflater.inflate(R.layout.sm_patient_page, container, false);
+		view = inflater.inflate(R.layout.sm_patient_page, container, false);
 		mPager = (ViewPager) view.findViewById(R.id.pager);
 		mIndicator = (PageIndicator) view.findViewById(R.id.indicator);
-		state = AndroidState.getInstance().getUserState();
-		currentAccount = state.getCurrentAccount();
-		if(currentAccount != null){
-			reader = state.getProvider(currentAccount);
-			this.patient = reader.getPatient(patient_id);
-			renderView(view);
-		} else {
-			if(conversation!=null){
-				new GetPatientDemographics(view).execute();
-			}
-		}
-        
+		progressBar = (ProgressBar) view.findViewById(R.id.progressBar);
 		return view;
 	}
 	
@@ -143,7 +157,9 @@ public class PatientClinicalViewFragment extends Fragment {
 		protected void onPostExecute(Object result) {
 			// TODO Auto-generated method stub
 			super.onPostExecute(result);
-			renderView(view);
+			if(patient!=null) {
+				renderView(view);
+			}
 		}
 	}  
 
@@ -172,8 +188,6 @@ public class PatientClinicalViewFragment extends Fragment {
         }else{
         	tvPatSex.setVisibility(View.GONE);
         }
-
-        
         
         String dob = this.patient.dateOfBirth.trim();
         if(dob.trim().equals("") || dob.trim().equals(null)){
@@ -201,7 +215,7 @@ public class PatientClinicalViewFragment extends Fragment {
     	
     	@Override
     	protected void onPostExecute(String result) {
-    		
+    		progressBar.setVisibility(View.GONE);
     		if(!result.contains("exceptionjobdisplay")){
     			try {
 					JSONObject js=new JSONObject(result);

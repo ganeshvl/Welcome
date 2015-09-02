@@ -1,0 +1,5 @@
+Entrada KeyStore
+
+Password : entrada
+Alias : android-dictate
+Validity : 50 years

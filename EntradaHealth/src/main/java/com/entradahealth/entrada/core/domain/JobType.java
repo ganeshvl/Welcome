@@ -62,6 +62,6 @@ public final class JobType implements Comparable<JobType> {
     @Override
     public int compareTo(JobType jobType)
     {
-        return this.name.compareTo(jobType.name);
+        return this.name.compareToIgnoreCase(jobType.name);
     }
 }

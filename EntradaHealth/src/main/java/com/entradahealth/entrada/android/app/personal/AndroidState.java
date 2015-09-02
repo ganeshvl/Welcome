@@ -84,11 +84,11 @@ public class AndroidState
     public void clearUserState()
     {
         if (userState == null) return;
-        synchronized (userState)
-        {
+//        synchronized (userState)
+//        {
             userState.dispose();
             userState = null;
-        }
+//        }
     }
 
 

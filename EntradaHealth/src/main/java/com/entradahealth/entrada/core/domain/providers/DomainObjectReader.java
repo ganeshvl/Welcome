@@ -75,8 +75,6 @@ public interface DomainObjectReader {
 	 * name. Result sorted via the default sort (Job.StandardComparator).
 	 */
 	List<Job> searchJobs(final String searchText);
-	
-	ArrayList<Schedule> searchSchedules(final String searchText);
 
 	@CheckForNull
 	JobType getJobType(final long id);
@@ -138,5 +136,13 @@ public interface DomainObjectReader {
 	Dictator getCurrentDictatorForUser(String user);
 
 	ArrayList<Schedule> getRaawScheduleDetailsList(String query);
+
+	ArrayList<Schedule> searchSchedules(String searchText);
+
+	JobType getDefaultGenericJobType();
+
+	List<JobType> getDefaultGenericJobTypes();
+
+	boolean isExistsInDefaultGenericJobTypes(Long jobTypeId);
 	
 }

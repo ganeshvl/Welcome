@@ -4,18 +4,20 @@ public class EUser {
 
 	private String name;
 	private String password;
+	private String qbUserName;
 	private String environment;
 	private String currentDictator;
 	private boolean isCurrent;
 	
 	public EUser(String name, String password, String environment,
-			String currentDictator, boolean isCurrent) {
+			String currentDictator, boolean isCurrent, String qbUserName) {
 		super();
 		this.name = name;
 		this.password = password;
 		this.environment = environment;
 		this.currentDictator = currentDictator;
 		this.isCurrent = isCurrent;
+		this.qbUserName = qbUserName;
 	}
 	public EUser() {
 	}
@@ -49,6 +51,11 @@ public class EUser {
 	public void setCurrent(boolean isCurrent) {
 		this.isCurrent = isCurrent;
 	}
-	
+	public String getQbUserName() {
+		return qbUserName;
+	}
+	public void setQbUserName(String qbUserName) {
+		this.qbUserName = qbUserName;
+	}
 	
 }

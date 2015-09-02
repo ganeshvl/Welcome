@@ -22,7 +22,7 @@ import org.json.JSONObject;
 
 import se.emilsjolander.stickylistheaders.StickyListHeadersListView;
 import android.app.Activity;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;

@@ -7,24 +7,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import android.util.Log;
 
-import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
 import com.entradahealth.entrada.android.app.personal.Environment;
 import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
-import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.Attachment;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTUser;
-import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.db.H2Utils;
+import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.TOU;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.domain.providers.DatabaseProvider.DatabaseProviderException;
@@ -32,6 +29,7 @@ import com.entradahealth.entrada.core.inbox.dao.ENTHandler;
 import com.entradahealth.entrada.core.inbox.dao.ENTHandlerFactory;
 import com.entradahealth.entrada.core.inbox.dao.ENTQBMessageHandler;
 import com.entradahealth.entrada.core.remote.APIService;
+import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -109,7 +107,7 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 	private static final String SQL_INSERT_CONVERSATION = "INSERT INTO Conversations VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 	private static final String SQL_UPDATE_BUDDY = "UPDATE Buddies SET Username = ?, IsFavorite = ?, FirstName = ?, MI = ?, LastName = ? WHERE ID = ?;";
 	private static final String SQL_UPDATE_MESSAGE = "UPDATE Messages SET Text = ?, Type = ?, PatientID = ?, AuthorID = ?, ConversationID = ?, AttachmentID = ?, SentDateTime = ?, IsOutgoing = ?, IsRead = ?, IsDelivered = ? WHERE ID = ?;";
-	private static final String SQL_UPDATE_CONVERSATION = "UPDATE Conversations SET OwnerID = ?, LastUpdated = ?, LastMessage = ?, UnreadMessagesCount = ? WHERE ID = ?;";
+	private static final String SQL_UPDATE_CONVERSATION = "UPDATE Conversations SET OwnerID = ?, LastUpdated = ?, LastMessage = ?, UnreadMessagesCount = ?, RecipientIDs = ? WHERE ID = ?;";
 	private static final String SQL_INSERT_PENDING_INVITE = "INSERT INTO PendingInvites VALUES (?, ?, ?, ?, ?);";
 	private static final String SQL_GET_PENDING_INVITES = "SELECT * FROM PendingInvites;";
 	private static final String SQL_DELETE_PENDING_INVITES = "DELETE FROM PendingInvites;";
@@ -303,6 +301,53 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 		}
 	}
 	
+	private static final String SQL_GET_MESSAGES_BY_CONVERSATION_ID_PAGING = "SELECT * FROM Messages WHERE ConversationID = ? ORDER BY SentDateTime ASC LIMIT ? OFFSET ?;";
+
+	@Override
+	public ImmutableList<ENTMessage> getMessagesFromConversation(String ID, int offset, int limit) {
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_GET_MESSAGES_BY_CONVERSATION_ID_PAGING);
+			if (ID != null)
+				stmt.setString(1, ID);
+			stmt.setInt(2, limit);
+			stmt.setInt(3, offset);
+			rs = stmt.executeQuery();
+			List<ENTMessage> messages = createMessages(rs);
+			return ImmutableList.copyOf(messages);
+		} catch (Exception e) {
+			throw new DatabaseProviderException(e);
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
+	}
+	
+	private static final String SQL_CONVERSATION_MESSAGES_COUNT = "SELECT COUNT(ID) FROM Messages WHERE ConversationID = ?;";
+	
+	@Override
+	public int getConversationMessagesCount(String conversationId){
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_CONVERSATION_MESSAGES_COUNT);
+			stmt.setString(1, conversationId);
+			rs = stmt.executeQuery();
+			int count = 0;
+			if (rs.next())
+			{
+			  count = rs.getInt(1);
+			}
+			return count;
+		} catch (Exception e) {
+			return 0;
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
+	}
+
 	@Override
 	public ENTMessage getRecentMessageFromConversation(String ID) {
 			PreparedStatement stmt = null;
@@ -473,13 +518,13 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 				 H2Utils.close(stmt);
 			}		
 	}
+	
 	@Override
 	public void addMessageToConversation(ENTMessage message) throws DomainObjectWriteException {
 			PreparedStatement stmt = null;
 			try {
 				stmt = _conn.prepareStatement(SQL_INSERT_MESSAGE);
 				stmt.setString(1, message.getId());
-				stmt.setString(2, message.getMessage());
 				int type = 0;
 				String attachmentID = "0";
 				if(message.getType()!=1) {
@@ -487,6 +532,15 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 						if(message.getAttachments()!=null && message.getAttachments().size()>0) {
 							type = contentTypes.get(message.getAttachments().get(0).getType());
 							attachmentID =  message.getAttachments().get(0).getId();
+							switch(type){
+							case 2:
+								message.setMessage("Image");
+								break;
+							case 3:
+								message.setMessage("Audio");
+								break;
+							}
+
 						}
 					} catch(Exception ex){
 						type = 0;
@@ -495,6 +549,7 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 				} else {
 					type = 1;
 				}
+				stmt.setString(2, message.getMessage());
 				stmt.setLong(3, Long.valueOf(type));
 				stmt.setLong(4, message.getPatientID());
 				stmt.setLong(5, Long.valueOf(message.getSender()));
@@ -602,7 +657,14 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 				}
 				stmt.setString(3, conversation.getLastMessage());
 				stmt.setLong(4, conversation.getUnreadMessagesCount());
-				stmt.setString(5, conversation.getId());
+				StringBuffer strBuf = new StringBuffer();
+				for (int i = 0; i < conversation.getOccupantsIds().length; i++) {
+					strBuf.append(conversation.getOccupantsIds()[i]);
+					strBuf.append(",");
+				}
+				String str = strBuf.toString();
+				stmt.setString(5, "["+str.substring(0, str.length()-1)+"]");
+				stmt.setString(6, conversation.getId());
 				int rows = stmt.executeUpdate();
 			} catch (Exception ex) {
 				throw ex;
@@ -618,32 +680,39 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 		if(application.getPassPhrase(conversation.getId()) != null){
 			passPhrase = application.getPassPhrase(conversation.getId());
 		} else {
-			passPhrase = service.createThread(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation.getId());
+			try {
+				passPhrase = service.getMessageThreadDetails(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation.getId());
+				application.addPassPhrase(conversation.getId(), passPhrase);
+			} catch (ServiceException e) {
+				e.printStackTrace();
+			}
 			application.addPassPhrase(conversation.getId(), passPhrase);
 		}
 		conversation.setPassPhrase(passPhrase);
 		List<ENTMessage> _messagesList = ((ENTQBMessageHandler) handler).getMessagesFromDialog(conversation);
-		ENTMessage message = _messagesList.get(_messagesList.size()-1);
-		if(message.getPatientID()!=0) {
-			try {
-				updatePatientIdInCoversation(message);
-			} catch (DomainObjectWriteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		if(_messagesList.size()>0){
+			ENTMessage message = _messagesList.get(_messagesList.size()-1);
+			if(message.getPatientID()!=0) {
+				try {
+					updatePatientIdInCoversation(message);
+				} catch (DomainObjectWriteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-		}
-		if(message!=null && message.getAttachments()!=null && message.getAttachments().size()>0){
-			Attachment attachment = message.getAttachments().get(0);
-			switch(contentTypes.get(attachment.getType())){
-			case 2:
-				conversation.setLastMessage("Image");
-				break;
-			case 3:
-				conversation.setLastMessage("Audio");
-				break;
+			if(message!=null && message.getAttachments()!=null && message.getAttachments().size()>0){
+				Attachment attachment = message.getAttachments().get(0);
+				switch(contentTypes.get(attachment.getType())){
+				case 2:
+					conversation.setLastMessage("Image");
+					break;
+				case 3:
+					conversation.setLastMessage("Audio");
+					break;
+				}
+			} else {
+				conversation.setLastMessage(message.getMessage());
 			}
-		} else {
-			conversation.setLastMessage(message.getMessage());
 		}
 		return conversation;
 	}
@@ -792,5 +861,175 @@ public class SMDatabaseProvider implements SMDomainObjectProvider {
 			 H2Utils.close(stmt);
 		}
 	}
+
+	private static final String SQL_COUNT_UNREAD = "SELECT COUNT(m.ID) FROM Messages m INNER JOIN Conversations c ON m.ConversationID = c.ID WHERE m.IsRead = ? and AuthorID <> ?;";
+	@Override
+	public int getUnreadMessagesCount(){
+		
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_COUNT_UNREAD);
+			stmt.setBoolean(1, false);
+			stmt.setLong(2, Long.valueOf(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID)));
+			rs = stmt.executeQuery();
+			int count = 0;
+			if (rs.next())
+			{
+			  count = rs.getInt(1);
+			}
+			return count;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return 0;
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
+	}
+
+	private static final String SQL_CONVERSATION_COUNT_UNREAD = "SELECT COUNT(ID) FROM Messages WHERE IsRead = ? and ConversationID = ? and AuthorID <> ?;";
+	@Override
+	public int getConversationUnreadMessagesCount(String conversationId){
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_CONVERSATION_COUNT_UNREAD);
+			stmt.setBoolean(1, false);
+			stmt.setString(2, conversationId);
+			stmt.setLong(3, Long.valueOf(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID)));
+			rs = stmt.executeQuery();
+			int count = 0;
+			if (rs.next())
+			{
+			  count = rs.getInt(1);
+			}
+			return count;
+		} catch (Exception e) {
+			return 0;
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
+	}
+	
+	private static final String SQL_MARK_MESSAGES_AS_READ = "UPDATE Messages SET IsRead=? WHERE ConversationID=?;";
+	
+	@Override
+	public void markConversationMessagesAsRead(String conversationId){
+		PreparedStatement stmt = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_MARK_MESSAGES_AS_READ);
+			stmt.setBoolean(1, true);
+			stmt.setString(2, conversationId);
+			int result = stmt.executeUpdate();
+		}catch (Exception e) {
+			Log.e("exc", e.getMessage());
+			throw new DatabaseProviderException(e);
+		} finally {
+			 H2Utils.close(stmt);
+		}
+		
+	}
+
+	private static final String SQL_MERGE_PATIENT = "MERGE INTO patients VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+	@Override
+	public void writePatient(Patient patient) throws DomainObjectWriteException {
+		PreparedStatement stmt = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_MERGE_PATIENT);
+
+			stmt.setLong(1, patient.id);
+			stmt.setString(2, patient.medicalRecordNumber);
+			stmt.setString(3, patient.firstName);
+			stmt.setObject(4, patient.middleInitial);
+			stmt.setString(5, patient.lastName);
+			stmt.setString(
+					6,
+					(patient.dateOfBirth != null) ? patient.dateOfBirth
+							.toString() : null);
+			stmt.setString(7, patient.gender.name());
+			stmt.setString(8, patient.address1);
+			stmt.setString(9, patient.address2);
+			stmt.setString(10, patient.city);
+			stmt.setString(11, patient.state);
+			stmt.setString(12, patient.zip);
+			stmt.setString(13, patient.phone);
+			stmt.setString(14, patient.pcpid);
+			
+			int result = stmt.executeUpdate();
+			if (stmt.executeUpdate() != 1)
+				throw new DomainObjectWriteException(String.format(
+						"Write failed, %d rows affected.", result));
+		} catch (Exception e) {
+			throw new DatabaseProviderException(e);
+		} finally {
+			 H2Utils.close(stmt);
+		}
+	}
+
+
+	@Override
+	public void writePatients(Iterable<Patient> patients)
+			throws DomainObjectWriteException {
+		for (Patient p : patients)
+			writePatient(p);
+	}
+
+	private static final String SQL_GET_PATIENT_BY_ID = "SELECT * FROM patients WHERE "	+ Patient.FIELD_ID + " = ?;";
+
+	@Override
+	public Patient getPatient(long id) {
+		List<Patient> p = patientQuery(SQL_GET_PATIENT_BY_ID, id, null);
+		return p.size() != 0 ? p.get(0) : null;
+	}
+
+	private List<Patient> patientQuery(String query, Long id, String mrn) {
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = _conn.prepareStatement(query);
+
+			if (id != null)
+				stmt.setLong(1, id);
+			else if (mrn != null)
+				stmt.setString(1, mrn);
+
+			rs = stmt.executeQuery();
+
+			return createPatients(rs);
+		} catch (Exception e) {
+			throw new DatabaseProviderException(e);
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
+	}
+	
+	private List<Patient> createPatients(ResultSet rs) throws SQLException {
+		List<Patient> patients = Lists.newArrayList();
+
+		while (rs.next()) {
+			String s = rs.getString(Patient.FIELD_GENDER);
+			patients.add(new Patient(rs.getLong(Patient.FIELD_ID), rs
+					.getString(Patient.FIELD_MRN), rs
+					.getString(Patient.FIELD_FIRST_NAME), (String) rs
+					.getObject(Patient.FIELD_MIDDLE_INITIAL), rs
+					.getString(Patient.FIELD_LAST_NAME), rs
+					.getString(Patient.FIELD_DOB), rs
+					.getString(Patient.FIELD_GENDER),rs
+					.getString(Patient.FIELD_PCPID), rs
+					.getString(Patient.FIELD_ADDRESS1), rs
+					.getString(Patient.FIELD_ADDRESS2), rs
+					.getString(Patient.FIELD_CITY), rs
+					.getString(Patient.FIELD_STATE), rs
+					.getString(Patient.FIELD_ZIP), rs
+					.getString(Patient.FIELD_PHONE)));
+		}
+
+		return patients;
+	}
+
 
 }

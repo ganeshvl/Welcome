@@ -1,7 +1,20 @@
 package com.entradahealth.entrada.core.domain.providers;
 
+import java.sql.ResultSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+import org.joda.time.DateTime;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.entradahealth.entrada.android.app.personal.activities.add_account.Dictator;
 import com.entradahealth.entrada.android.app.personal.activities.add_account.EUser;
+
 import com.entradahealth.entrada.android.app.personal.activities.schedule.model.Resource;
 import com.entradahealth.entrada.android.app.personal.activities.schedule.model.Schedule;
 import com.entradahealth.entrada.core.domain.*;
@@ -25,6 +38,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 /**
  * This provider provides (gasp) an in-memory store of domain objects and can be
@@ -762,6 +781,21 @@ public class MemoryStoreProvider implements DomainObjectReader,
 		// TODO Auto-generated method stub
 		
 	}
+	
+	public void deleteDictator(Dictator dictator) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void updateDictatorName(long dictatorId, String dictatorName)
+			throws DomainObjectWriteException {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+
 
 	@Override
 	public void scheduleInsertUpdate(Schedule schedule) {
@@ -779,6 +813,24 @@ public class MemoryStoreProvider implements DomainObjectReader,
 	public ArrayList<Schedule> searchSchedules(String searchText) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public JobType getDefaultGenericJobType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<JobType> getDefaultGenericJobTypes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isExistsInDefaultGenericJobTypes(Long jobTypeId) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 	
 }

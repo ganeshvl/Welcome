@@ -169,7 +169,7 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
 	@CheckForNull
 	public JobType getJobType(long id) {
@@ -521,7 +521,7 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 		
 	}
 
-	public static final String SQL_INSERT_EUSER = "INSERT INTO EUser(Name, Password, Environment, CurrentDictator, IsCurrent) VALUES (?, ?, ?, ?, ?);";
+	public static final String SQL_INSERT_EUSER = "INSERT INTO EUser(Name, Password, Environment, CurrentDictator, IsCurrent, QBUserName) VALUES (?, ?, ?, ?, ?, ?);";
 
 	@Override
 	public void addUser(EUser user) throws DomainObjectWriteException{
@@ -533,9 +533,10 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 			stmt.setString(3, user.getEnvironment());
 			stmt.setString(4, user.getCurrentDictator());
 			stmt.setBoolean(5, user.isCurrent());
+			stmt.setString(6, user.getQbUserName());
 			
 			int result = stmt.executeUpdate();
-			if (stmt.executeUpdate() != 1)
+			if (result != 1)
 				throw new DomainObjectWriteException(String.format(
 						"Write failed, %d rows affected.", result));
 			
@@ -558,7 +559,7 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 			stmt.setString(2, user.getName());
 			Log.e("","User--"+user.getName()+"--"+user.isCurrent());
 			int result = stmt.executeUpdate();
-			if (stmt.executeUpdate() != 1)
+			if (result != 1)
 				throw new DomainObjectWriteException(String.format(
 						"Write failed, %d rows affected.", result));
 			
@@ -628,7 +629,75 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 			stmt.setBoolean(5, dictator.isCurrent());
 			
 			int result = stmt.executeUpdate();
-			if (stmt.executeUpdate() != 1)
+			if (result != 1)
+				throw new DomainObjectWriteException(String.format(
+						"Write failed, %d rows affected.", result));
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			 H2Utils.close(stmt);
+		}
+	}
+	
+	private static final String SQL_DEL_DICTATOR_BY_ID = "DELETE FROM DICTATOR WHERE DictID = ?;";
+	
+	@Override
+	public void deleteDictator(Dictator dictator){
+		PreparedStatement stmt = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_DEL_DICTATOR_BY_ID);
+			stmt.setLong(1, dictator.getDictatorID());
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void deleteUserAndDictators(EUser user){
+		deleteUser(user);
+		deleteUserDictators(user);
+	}
+	
+	private static final String SQL_DEL_USER_BY_NAME = "DELETE FROM EUSER WHERE Name = ?";
+
+	public void deleteUser(EUser user){
+		PreparedStatement stmt = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_DEL_USER_BY_NAME);
+			stmt.setString(1, user.getName());
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static final String SQL_DEL_USER_DICTATORS = "DELETE FROM DICTATOR WHERE Username = ?";
+
+	public void deleteUserDictators(EUser user){
+		PreparedStatement stmt = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_DEL_USER_DICTATORS);
+			stmt.setString(1, user.getName());
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static final String SQL_UPDATE_DICTATOR_NAME = "UPDATE DICTATOR SET Name = ? WHERE DictID = ?";
+	
+	@Override
+	public void updateDictatorName(long dictatorId, String dictatorName) throws DomainObjectWriteException{
+		PreparedStatement stmt = null;
+		try {		
+			stmt = _conn.prepareStatement(SQL_UPDATE_DICTATOR_NAME);
+			stmt.setString(1, dictatorName);
+			stmt.setLong(2, dictatorId);
+			
+			int result = stmt.executeUpdate();
+			if (result != 1)
 				throw new DomainObjectWriteException(String.format(
 						"Write failed, %d rows affected.", result));
 			
@@ -652,7 +721,7 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 			stmt.setString(3, dictator.getDictatorName());
 			
 			int result = stmt.executeUpdate();
-			if (stmt.executeUpdate() != 1)
+			if (result != 1)
 				throw new DomainObjectWriteException(String.format(
 						"Write failed, %d rows affected.", result));
 			
@@ -673,6 +742,7 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 			 user.setEnvironment(rs.getString("Environment"));
 			 user.setCurrentDictator(rs.getString("CurrentDictator"));
 			 user.setCurrent(rs.getBoolean("IsCurrent"));
+			 user.setQbUserName(rs.getString("QBUserName"));
 			 users.add(user);
 		}
 		return users;
@@ -795,6 +865,24 @@ public class MainUserDatabaseProvider implements DomainObjectProvider{
 	public ArrayList<Schedule> searchSchedules(String searchText) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public JobType getDefaultGenericJobType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<JobType> getDefaultGenericJobTypes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isExistsInDefaultGenericJobTypes(Long jobTypeId) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	

@@ -3,6 +3,7 @@ package com.entradahealth.entrada.core.inbox.domain.providers;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTUser;
+import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 
 public interface SMDomainObjectWriter {
@@ -23,5 +24,8 @@ public interface SMDomainObjectWriter {
 	void deletePendingInvites();
 	void addConversation(ENTConversation conversation, boolean fetchMessage) throws DomainObjectWriteException;
 	void updateConversation(ENTConversation conversation, boolean fetchMessage) throws DomainObjectWriteException, Exception;
+	void markConversationMessagesAsRead(String conversationId);
+	void writePatient(Patient patient) throws DomainObjectWriteException;
+	void writePatients(Iterable<Patient> patients) throws DomainObjectWriteException;
 	
 }

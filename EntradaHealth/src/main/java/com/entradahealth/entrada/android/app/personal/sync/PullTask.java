@@ -59,8 +59,8 @@ public class PullTask extends DialogTask<Map<Account, SyncData>>
 
         Map<Account, SyncData> result = Maps.newHashMap();
 
-        synchronized (userState)
-        {
+        //synchronized (userState)
+       // {
             for (Account account : this.accountsToSync)
             {
                 try
@@ -81,7 +81,7 @@ public class PullTask extends DialogTask<Map<Account, SyncData>>
                             ". Please contact support if this persists.";
                 }
             }
-        }
+        //}
 
         return result;
     }

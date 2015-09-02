@@ -50,25 +50,22 @@ CREATE TABLE IF NOT EXISTS PendingInvites
   LastName varchar(255)
 );
 
-CREATE TABLE IF NOT EXISTS Patient
+CREATE TABLE IF NOT EXISTS patients
 (  
-  Address1 varchar(255) NOT NULL,
-  City varchar(255) NOT NULL,
-  MRN varchar(255) NOT NULL,
-  Address2 varchar(255) NOT NULL,
-  PrimaryCareProviderID varchar(255) NOT NULL,
-  ID bigint NOT NULL PRIMARY KEY,
-  State varchar(255) NOT NULL,
-  ClinicID varchar(255) NOT NULL,
-  DOB varchar(255) NOT NULL,
-  FirstName varchar(255) NOT NULL,
-  AlternateID varchar(255) NOT NULL,
-  Gender varchar(255) NOT NULL,
-  MI varchar(255) NOT NULL,
-  Zip varchar(255) NOT NULL,
-  Phone1 varchar(255) NOT NULL,
-  LastName varchar(255) NOT NULL,
-  Suffix varchar(255) NOT NULL,
+  PatientID     bigint        NOT NULL  PRIMARY KEY,
+  MRN           varchar_ignorecase(255)  NOT NULL,
+  FirstName     varchar_ignorecase(255)  NOT NULL,
+  MI            varchar_ignorecase(255)  NULL,
+  LastName      varchar_ignorecase(255)  NOT NULL,
+  DOB           varchar_ignorecase(255)  NULL,
+  Gender        varchar_ignorecase(20)   NOT NULL,
+  Address1      varchar_ignorecase(255)  NULL,
+  Address2      varchar_ignorecase(255)  NULL,
+  City          varchar_ignorecase(255)  NULL,
+  State         varchar_ignorecase(255)  NULL,
+  Zip         	varchar_ignorecase(255)  NULL,
+  Phone1        varchar_ignorecase(255)  NULL,
+  PrimaryCareProviderID	varchar_ignorecase(255)  NULL
 );
 
 CREATE TABLE IF NOT EXISTS tou

@@ -16,6 +16,7 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
 
 /**
  * TODO: Document this!
@@ -123,8 +124,6 @@ public class AudioManager {
                         AudioManager.ENCODING,
                         AudioManager.BUFFER_SIZE);
                 
-                
-
                 assert recorder.getState() == AudioRecord.STATE_INITIALIZED;
                 
                 recorder.startRecording();
@@ -272,6 +271,8 @@ public class AudioManager {
                     totalWritten += player.write(buf.array(), 0, buf.remaining()) / 2;
                     publishProgress(Long.valueOf(offset + totalWritten) / SAMPLES_PER_UNIT);
                 }
+            } catch (NoSuchElementException ex) {
+            	ex.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();  // TODO: Handle this exception type.
             } finally {

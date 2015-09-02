@@ -22,14 +22,12 @@ import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.add_account.AddAccountActivity;
 import com.entradahealth.entrada.android.app.personal.activities.add_account.EUser;
-import com.entradahealth.entrada.android.app.personal.activities.add_account.Setup;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.SecureMessaging;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.UserAuthenticate;
 import com.entradahealth.entrada.android.app.personal.activities.job_display.CaptureImages;
 import com.entradahealth.entrada.android.app.personal.activities.job_display.ImageDisplayActivity;
 import com.entradahealth.entrada.android.app.personal.activities.job_display.JobDisplayActivity;
 import com.entradahealth.entrada.android.app.personal.activities.job_list.JobListActivity;
-import com.entradahealth.entrada.android.app.personal.activities.settings.EntradaSettings;
 import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.auth.User;
 import com.entradahealth.entrada.core.auth.UserPrivate;
@@ -138,7 +136,15 @@ public class VerifyPinTask extends DialogTask<Boolean> {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		this.dialog.dismiss();
+		try{
+			if(this.dialog!=null) {
+				if(this.dialog.isShowing()) {
+					this.dialog.dismiss();
+				}
+			}
+		} catch(Exception ex){
+			ex.printStackTrace();
+		}
 
 		if (result) {
 			Editor edit = sp.edit();
@@ -209,6 +215,25 @@ public class VerifyPinTask extends DialogTask<Boolean> {
         }
         
         @Override
+        protected Boolean doInBackground(Void... params) {
+        	// TODO Auto-generated method stub
+        	UserState state = AndroidState.getInstance().getUserState();
+        	try {
+				state.setSMUser();
+			} catch (DomainObjectWriteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AccountException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidPasswordException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	return true;
+        }
+        
+        @Override
         protected void onPostSuccessful() {
         	// TODO Auto-generated method stub
         	super.onPostSuccessful();
@@ -273,6 +298,11 @@ public class VerifyPinTask extends DialogTask<Boolean> {
 				}
 				intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 activity.startActivity(intent);
+                	try {
+                		Bundle extras = activity.getIntent().getExtras();
+                		BundleKeys.fromSecureMessaging = extras.getBoolean("fromSecureMessaging"); 
+                    } catch(Exception ex){
+                    }
                 activity.finish();
             } catch (Exception e) {
                 ACRA.getErrorReporter().handleSilentException(e);
@@ -298,6 +328,25 @@ public class VerifyPinTask extends DialogTask<Boolean> {
         }
         
         @Override
+        protected Boolean doInBackground(Void... params) {
+        	// TODO Auto-generated method stub
+        	UserState state = AndroidState.getInstance().getUserState();
+        	try {
+				state.setSMUser();
+			} catch (DomainObjectWriteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AccountException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvalidPasswordException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	return true;
+        }
+        
+        @Override
         protected void onPostSuccessful() {
         	// TODO Auto-generated method stub
         	super.onPostSuccessful();
@@ -305,6 +354,11 @@ public class VerifyPinTask extends DialogTask<Boolean> {
             Intent intent = new Intent(activity, JobListActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             activity.startActivity(intent);
+            try {
+            	Bundle extras = activity.getIntent().getExtras();
+            	BundleKeys.fromSecureMessaging = extras.getBoolean("fromSecureMessaging"); 
+            } catch(Exception ex){
+            }
             activity.finish();
         }
     }

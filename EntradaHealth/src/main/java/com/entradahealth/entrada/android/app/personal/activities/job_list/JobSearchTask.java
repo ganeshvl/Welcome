@@ -19,6 +19,7 @@ import android.util.Log;
 
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
+import com.entradahealth.entrada.android.app.personal.EntradaApplication;
 import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.domain.Encounter;
@@ -45,6 +46,7 @@ public class JobSearchTask extends AsyncTask<Void, Void, List<Job>>
     protected final Comparator<Job> comparator;
     ProgressDialog pDialog;
     int ct;//count for results returned from search
+    private EntradaApplication application;
 
     public JobSearchTask(JobListActivity activity, String searchText, Account account,
                          Predicate<Job> filter, Comparator<Job> comparator)
@@ -56,6 +58,7 @@ public class JobSearchTask extends AsyncTask<Void, Void, List<Job>>
         this.comparator = comparator;
         SharedPreferences sp = activity.getSharedPreferences("Entrada",
 				Context.MODE_WORLD_READABLE);
+        application = (EntradaApplication) EntradaApplication.getAppContext();
     }
     
 	@Override
@@ -252,6 +255,11 @@ public class JobSearchTask extends AsyncTask<Void, Void, List<Job>>
 					BundleKeys.List_Held_Encounters.toString());
 		
         jobs = Lists.newArrayList(Iterables.filter(jobs, filter));
+        List<Encounter> encounters = reader.getEncounters();
+        for(Encounter encounter : encounters){
+        	application.addEncounter(encounter.getId(), encounter);
+        }
+        Log.e("", "Encounters count--"+application.getEncounters().size());
         Collections.sort(jobs, comparator);
         List<Long> jobIds = Lists.newArrayList(Iterables.transform(jobs, new Function<Job, Long>()
 			        {

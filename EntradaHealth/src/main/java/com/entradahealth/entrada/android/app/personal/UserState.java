@@ -1,6 +1,7 @@
 package com.entradahealth.entrada.android.app.personal;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -16,7 +17,6 @@ import com.entradahealth.entrada.core.domain.providers.DatabaseProvider;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectProvider;
 import com.entradahealth.entrada.core.inbox.domain.providers.SMDatabaseProvider;
 import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectProvider;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 /**
@@ -39,28 +39,54 @@ import com.google.common.collect.ImmutableMap;
 public class UserState
 {
     private UserPrivate userData;
-    private ImmutableMap<Account, DatabaseProvider> accountDatabases;
-    private ImmutableMap<String, Account> accountNames;
-    private ImmutableMap<String, SMDatabaseProvider> usersDatabases;
+    private Map<Account, DatabaseProvider> accountDatabases;
+    private Map<String, Account> accountNames;
+    private Map<String, SMDatabaseProvider> usersDatabases;
 
     private boolean disposed = false;
+    private EntradaApplication application;
 
     public UserState(UserPrivate user) throws AccountException, InvalidPasswordException, DomainObjectWriteException {
         userData = user;
+        application = (EntradaApplication) EntradaApplication.getAppContext();
+        String dictatorId = application.getStringFromSharedPrefs(BundleKeys.DICTATOR_ID);
         Collection<Account> accounts = userData.getAccounts();
 
-        ImmutableMap.Builder<Account, DatabaseProvider> builder = ImmutableMap.builder();
-        ImmutableMap.Builder<String, Account> nameBuilder = ImmutableMap.builder();
+        accountDatabases = new HashMap<Account, DatabaseProvider>();
+        accountNames = new HashMap<String, Account>();
         for (Account a : accounts)
         {
-            DatabaseProvider provider = new DatabaseProvider(userData.openAccountDatabase(a.getName()));
-            builder.put(a, provider);
-            nameBuilder.put(a.getName(), a);
+            	if(a.getName().equals(dictatorId)) {
+		            DatabaseProvider provider = new DatabaseProvider(userData.openAccountDatabase(a.getName()));
+		            accountDatabases.put(a, provider);
+		            accountNames.put(a.getName(), a);
+            }
         }
-        accountDatabases = builder.build();
-        accountNames = nameBuilder.build();
     }
 
+    public void addAccount(String dictator){
+        Collection<Account> accounts = userData.getAccounts();
+    	for (Account a : accounts)
+        {
+				try {
+					if(a.getName().equals(dictator)) {
+						DatabaseProvider provider = new DatabaseProvider(userData.openAccountDatabase(a.getName()));
+			            accountDatabases.put(a, provider);
+			            accountNames.put(a.getName(), a);
+					}
+				} catch (DomainObjectWriteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (AccountException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (InvalidPasswordException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+        }
+    }
+    
     public void setSMUser() throws DomainObjectWriteException, AccountException, InvalidPasswordException{
         EntradaApplication application = (EntradaApplication) EntradaApplication.getAppContext();
         String userName = application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN);

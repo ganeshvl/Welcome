@@ -44,7 +44,7 @@ public class UpdateTask extends DialogTask<Void> {
 		progress("Finalizing sync...");
 		Log.d("ENTRADA-SYNC-PERF", "starting update task.");
 
-		synchronized (userState) {
+		//synchronized (userState) {
 			for (Map.Entry<Account, SyncData> entry : data.entrySet()) {
 				Account account = entry.getKey();
 				SyncData data = entry.getValue();
@@ -75,7 +75,7 @@ public class UpdateTask extends DialogTask<Void> {
 						"Error saving userdata after UpdateTask: ", e);
 				throw new RuntimeException(e);
 			}
-		}
+		//}
 
         return null;
     }

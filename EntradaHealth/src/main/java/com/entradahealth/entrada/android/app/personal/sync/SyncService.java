@@ -27,18 +27,19 @@ import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
 import com.entradahealth.entrada.android.app.personal.UserState;
-import com.entradahealth.entrada.android.app.personal.activities.schedule.util.GetResourcesTask;
 import com.entradahealth.entrada.android.app.personal.utils.AccountSettingKeys;
 import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.domain.Dictation;
 import com.entradahealth.entrada.core.domain.Encounter;
 import com.entradahealth.entrada.core.domain.Job;
+import com.entradahealth.entrada.core.domain.JobType;
 import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.Queue;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectProvider;
 import com.entradahealth.entrada.core.domain.retrievers.SyncData;
 import com.entradahealth.entrada.core.domain.senders.UploadData;
+import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectWriter;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
@@ -121,8 +122,6 @@ public class SyncService extends IntentService
     private List<Account> push(final UserState userState)
     {
         List<Account> result = Lists.newArrayList();
-        //GetResourcesTask task =  new GetResourcesTask();
-    	//task.execute();
 //        synchronized (userState)
 //        {
             for (Account account : userState.getAccounts())
@@ -267,6 +266,12 @@ public class SyncService extends IntentService
                 try
                 {
                     final DomainObjectProvider provider = userState.getProvider(account);
+                    SMDomainObjectWriter smProvider = null;
+                    try{
+                    	smProvider = userState.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+                    } catch(Exception ex){
+                    	ex.printStackTrace();
+                    }
                     Preconditions.checkNotNull(provider, "Provider for '" + account + "' is null.");
 
                     final Map<Long, Job> heldJobs = Maps.uniqueIndex(provider.getJobsByAnyFlags(Job.Flags.HOLD.value),
@@ -321,7 +326,11 @@ public class SyncService extends IntentService
                     
                     
                     provider.writeSyncData(data);
-
+                    try {
+                    	smProvider.writePatients(data.patients);
+                    } catch(Exception ex){
+                    	ex.printStackTrace();
+                    }
                     provider.writePatients(Iterables.filter(heldPatients.values(),
                                                             new Predicate<Patient>() {
                                                                 @Override
@@ -360,7 +369,16 @@ public class SyncService extends IntentService
                             }
                     )
                     );
-
+                    String defaultJobType = account.getSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID);
+                    if(defaultJobType == null) {
+                    	JobType jType = provider.getDefaultGenericJobType();
+                    	account.putSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID, String.valueOf(jType.id));
+                    } else {
+                    	if(!provider.isExistsInDefaultGenericJobTypes(Long.valueOf(defaultJobType))){
+                        	JobType jType = provider.getDefaultGenericJobType();
+                        	account.putSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID, String.valueOf(jType.id));
+                    	}
+                    }
                 }
                 catch (Exception e)
                 {
@@ -370,9 +388,6 @@ public class SyncService extends IntentService
                 BundleKeys.QUEUE_CHANGED = false;
                 account.putSetting(AccountSettingKeys.GENERIC_PATIENT_ID,
                                    String.valueOf(data.systemSettings.genericPatientID));
-                
-                account.putSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID,
-                                   String.valueOf(data.dictatorInfo.defaultJobTypeID));
                 account.putSetting(AccountSettingKeys.DEFAULT_QUEUE_ID,
                         String.valueOf(data.dictatorInfo.defaultQueueID));
                 account.putSetting(AccountSettingKeys.EXPRESS_QUEUES,

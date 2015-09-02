@@ -383,11 +383,13 @@ public class CaptureImages extends EntradaActivity {
 	        int column_index_data =  
 	                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
 
-	        String image_path = cursor.getString(column_index_data);
-
-	        File file = new File(image_path);
-	        if (file.exists()) {
-	            file.delete();
+	        if(cursor.getCount()>0){
+		        String image_path = cursor.getString(column_index_data);
+	
+		        File file = new File(image_path);
+		        if (file.exists()) {
+		            file.delete();
+		        }
 	        }
 	    }
 	}

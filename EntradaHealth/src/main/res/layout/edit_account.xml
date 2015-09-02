@@ -81,7 +81,6 @@
             android:layout_height="wrap_content"
             android:hint="@string/add_account_remote_username_hint"
             android:inputType="textVisiblePassword"
-            android:enabled="false"
             android:textSize="16sp" />
 
         <EditText
@@ -250,30 +249,18 @@
         
          <RelativeLayout
              android:id="@+id/rlJobtype"
+             android:paddingTop="5dp"
+             android:paddingBottom="5dp"
              android:layout_width="fill_parent"
-             android:layout_height="wrap_content"
-             android:visibility="gone" >
+             android:layout_height="wrap_content" >
         
         <TextView
             android:id="@+id/lblJobtype"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
             android:text="Job Type"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvNewJobtype"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_marginLeft="16dp"
-            android:layout_toRightOf="@+id/lblJobtype"
-            android:layout_toLeftOf="@+id/ivArrow"
-            android:gravity="right"
-            android:textSize="16sp"
-            android:visibility="visible" />
 
         <ImageView
             android:id="@+id/ivArrow"
@@ -283,6 +270,18 @@
             android:layout_centerVertical="true"
             android:src="@drawable/ic_arrow"
             android:visibility="visible" />
+        
+        <TextView
+            android:id="@+id/tvNewJobtype"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.8"
+            android:layout_toRightOf="@id/lblJobtype"
+            android:layout_toLeftOf="@id/ivArrow"
+            android:gravity="center_horizontal"
+            android:textSize="16sp"
+            android:visibility="visible" />
+
         
         </RelativeLayout>
     </LinearLayout>

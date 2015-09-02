@@ -5,6 +5,7 @@ import java.util.List;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTUser;
+import com.entradahealth.entrada.core.domain.Patient;
 import com.entradahealth.entrada.core.domain.TOU;
 import com.google.common.collect.ImmutableList;
 
@@ -22,5 +23,10 @@ public interface SMDomainObjectReader {
 	void saveTOU(String id, String vno);
 	void updateTOU(String id, String vno, boolean accepted);
 	List<ENTUser> getPendingInvites();
+	int getUnreadMessagesCount();
+	int getConversationUnreadMessagesCount(String conversationId);
+	Patient getPatient(long id);
+	int getConversationMessagesCount(String conversationId);
+	ImmutableList<ENTMessage> getMessagesFromConversation(String ID, int offset, int limit);
 
 }

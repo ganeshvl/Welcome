@@ -11,6 +11,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Intent;
+
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
@@ -20,7 +22,6 @@ import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTResponse;
-import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.auth.exceptions.AccountException;
 import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
@@ -29,6 +30,7 @@ import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectWrite
 import com.entradahealth.entrada.core.inbox.encryption.AES256Cipher;
 import com.entradahealth.entrada.core.inbox.service.ENTChatManager;
 import com.entradahealth.entrada.core.inbox.service.ENTQBChatManagerImpl;
+import com.entradahealth.entrada.core.inbox.service.NewConversationBroadcastService;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.google.gson.Gson;
 
@@ -161,7 +163,7 @@ public class ENTQBConversationHandler implements ENTConversationHandler{
 
 	public List<ENTConversation> getConversations(){
 		state = AndroidState.getInstance().getUserState();
-		try {
+	/*	try {
 			state.setSMUser();
 		} catch (DomainObjectWriteException e) {
 			e.printStackTrace();
@@ -169,7 +171,7 @@ public class ENTQBConversationHandler implements ENTConversationHandler{
 			e.printStackTrace();
 		} catch (InvalidPasswordException e) {
 			e.printStackTrace();
-		}
+		}*/
 		application = (EntradaApplication) EntradaApplication.getAppContext();
 		reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
 		return reader.getConversations();
@@ -178,12 +180,6 @@ public class ENTQBConversationHandler implements ENTConversationHandler{
 	public List<ENTConversation> saveConversations(){
 		List<ENTConversation> conversations = getPublicDialogs(null);
 		state = AndroidState.getInstance().getUserState();
-		try {
-			state.setSMUser();
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
 		application = (EntradaApplication) EntradaApplication.getAppContext();
 		writer = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
 		if(conversations!=null){
@@ -203,6 +199,14 @@ public class ENTQBConversationHandler implements ENTConversationHandler{
 	}
 
 	public void saveMessages(ENTConversation conversation){
+		saveMessages(conversation, true);
+	}
+	
+	public void saveMessages(ENTConversation conversation, boolean markMessagesRead){
+		saveMessages(conversation, markMessagesRead, true);
+	}
+	
+	public void saveMessages(ENTConversation conversation, boolean markMessagesRead, boolean triggerNotification){
 		ENTHandlerFactory handlerFactory = ENTHandlerFactory.getInstance();
 		ENTHandler handler = handlerFactory.getHandler(ENTHandlerFactory.QBMESSAGE);
 			try {
@@ -227,19 +231,38 @@ public class ENTQBConversationHandler implements ENTConversationHandler{
 				}
 				List<ENTMessage> messages = ((ENTQBMessageHandler) handler).getMessagesFromDialog(conversation);
 				for(ENTMessage message : messages){
+					if(!message.getSender().equals(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_USER_ID))){
+						message.setAsRead(0);
+					}
+					if(markMessagesRead){
+						message.setAsRead(1);
+					} 
 					writer.addMessageToConversation(message);
 					conversation.setUnreadMessagesCount(conversation.getUnreadMessagesCount());
 					conversation.setLastMessage(message.getMessage());
 					conversation.setLastMessageDateSent(message.getSentDate());
 					conversation.setPatientID(message.getPatientID());
+					if(!markMessagesRead) {
+						if(triggerNotification) {
+							NewConversationBroadcastService.processNotification(conversation);
+						}
+					}
 				}
 				writer.updateConversation(conversation);
+				application.setIntIntoSharedPrefs(BundleKeys.UNREAD_MESSAGES_COUNT, reader.getUnreadMessagesCount());
+				if(!markMessagesRead) {
+					//NewConversationBroadcastService.processNotification(conversation);
+					Intent intent = NewConversationBroadcastService.getCountIntent();
+					application.sendBroadcast(intent);
+				}
 			} catch (DomainObjectWriteException e) {
 				e.printStackTrace();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 	}
+	
+	
 
 	@Override
 	public List<ENTConversation> getAllDialogs(String customString) {

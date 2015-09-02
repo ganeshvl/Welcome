@@ -176,6 +176,10 @@ public class UserSelectActivity extends EntradaActivity {
 				Bundle b = new Bundle();
 				b.putString(BundleKeys.SELECTED_USER,
 						sp.getString("sel_user", null));
+				try{
+					b.putBoolean("fromSecureMessaging",getIntent().getExtras().getBoolean("fromSecureMessaging"));
+				} catch(Exception ex){
+				}
 				intent.putExtras(b);
 				intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 				startActivity(intent);

@@ -82,17 +82,34 @@ public class SwapAccountTask extends DialogTask<Boolean> {
 	        }
 	        catch (AccountException ex)
 	        {
-            Toast.makeText(pinActivity,
-                           "There was a problem loading your account. Please contact support.",
-                           Toast.LENGTH_SHORT).show();
+	        	
+	        pinActivity.runOnUiThread(new Runnable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+		            Toast.makeText(pinActivity,
+	                           "There was a problem loading your account. Please contact support.",
+	                           Toast.LENGTH_SHORT).show();
+					
+				}
+			});
 //            throw new RuntimeException(ex);
             return false;
 	        }
 	        catch (UserLoadException ex)
 	        {
-            Toast.makeText(pinActivity,
-                           "There was a problem loading your account. Please contact support.",
-                           Toast.LENGTH_SHORT).show();
+	        	pinActivity.runOnUiThread(new Runnable() {
+					
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+			            Toast.makeText(pinActivity,
+		                           "There was a problem loading your account. Please contact support.",
+		                           Toast.LENGTH_SHORT).show();
+						
+					}
+				});
 //            throw new RuntimeException(ex);
             return false;
 	        }

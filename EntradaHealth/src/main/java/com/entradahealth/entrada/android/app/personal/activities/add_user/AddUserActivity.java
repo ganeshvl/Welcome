@@ -1,6 +1,5 @@
 package com.entradahealth.entrada.android.app.personal.activities.add_user;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -11,6 +10,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+
 import com.entradahealth.entrada.android.R;
 import com.entradahealth.entrada.android.app.personal.EntradaActivity;
 import com.entradahealth.entrada.android.app.personal.activities.settings.EntradaSettings;

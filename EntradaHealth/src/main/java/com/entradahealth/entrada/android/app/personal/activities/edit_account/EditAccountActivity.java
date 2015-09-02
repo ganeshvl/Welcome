@@ -2,15 +2,14 @@ package com.entradahealth.entrada.android.app.personal.activities.edit_account;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.acra.ACRA;
 
 import android.app.ActionBar;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,14 +25,15 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.LinearLayout.LayoutParams;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,12 +46,10 @@ import com.entradahealth.entrada.android.app.personal.activities.manage_queues.M
 import com.entradahealth.entrada.android.app.personal.activities.settings.EntradaSettings;
 import com.entradahealth.entrada.android.app.personal.activities.user_select.UserSelectActivity;
 import com.entradahealth.entrada.android.app.personal.utils.AccountSettingKeys;
-import com.entradahealth.entrada.android.app.personal.utils.NetworkState;
 import com.entradahealth.entrada.android.app.personal.utils.TestConnectionTask;
 import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.auth.User;
 import com.entradahealth.entrada.core.auth.UserPrivate;
-import com.entradahealth.entrada.core.auth.exceptions.UserLoadException;
 import com.entradahealth.entrada.core.domain.Job;
 import com.entradahealth.entrada.core.domain.JobType;
 import com.entradahealth.entrada.core.domain.Patient;
@@ -60,6 +58,7 @@ import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteExcepti
 import com.entradahealth.entrada.core.domain.providers.DomainObjectProvider;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectReader;
 import com.entradahealth.entrada.core.domain.providers.DomainObjectWriter;
+import com.entradahealth.entrada.core.domain.providers.MainUserDatabaseProvider;
 import com.entradahealth.entrada.core.files.FileUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -86,9 +85,11 @@ public class EditAccountActivity extends EntradaActivity
     EditText etMRN, etLastname, etFirstname;
     RelativeLayout rlJobType;
     TextView tvSelQueue, tvEditQueue, tvExpressQueues, tvClearJobs, tvJobType;
+    ImageView ivArrow;
     boolean hasDispName = false, hasCCode = false, hasRName = false, hasPWord = false, isCurrent = false, isQueueLoaded = false;
-    String accountName, value, sel_user_name, selectedusername;
+    String accountName, value, sel_user_name, selectedusername, jobtypeId;
     LinearLayout llQueues; 
+    Context context;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +103,7 @@ public class EditAccountActivity extends EntradaActivity
     	sel_user_name = getIntent().getStringExtra("sel_user_name");
     	Log.e("sel_user_name", sel_user_name);    	
     	
+    	context = this;
     	accountName = getIntent().getStringExtra(BundleKeys.SELECTED_ACCOUNT);
     	selectedusername = getIntent().getStringExtra("selected_user");
     	
@@ -246,14 +248,55 @@ public class EditAccountActivity extends EntradaActivity
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				//dgJobType();
+				if(jobtypeId != null) {
+					dgJobType();
+				} else {
+					Toast.makeText(context, "You need to sync account, to select Job Type", Toast.LENGTH_SHORT).show();
+				}
 			}
 		});
-    	
     	llQueues = (LinearLayout)findViewById(R.id.llQueues);
     	tvExpressQueues = (TextView)findViewById(R.id.tvExpressQueues);
     	//expressQueuesInfo();
     }
+    
+	public void dgJobType() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Select Job type");
+		builder.setCancelable(false);
+
+		List<JobType> myJobTypes = new ArrayList<JobType>();
+		myJobTypes.addAll(provider.getDefaultGenericJobTypes());
+		final JobTypeAdapter adap = new JobTypeAdapter(this, myJobTypes);
+
+		builder.setAdapter(adap, new DialogInterface.OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				// TODO Auto-generated method stub
+				try {
+					JobType sel_jtype = adap.getItem(which);
+					tvJobType.setText(sel_jtype.name);
+					editingAccount.putSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID, String.valueOf(sel_jtype.id));
+					state.getUserData().save();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+
+		builder.setNegativeButton("Cancel",
+				new DialogInterface.OnClickListener() {
+
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						dialog.dismiss();
+					}
+				});
+		builder.show();
+	}
     
     private UserState state;
     private DomainObjectReader reader;
@@ -267,11 +310,25 @@ public class EditAccountActivity extends EntradaActivity
 		ActionBar ab = getActionBar();
 		ab.setTitle("Account Settings");
 		ab.setDisplayHomeAsUpEnabled(true);
-
-		editingAccount = AndroidState.getInstance().getUserState()
-				.getAccount(accountName);
+		state = AndroidState.getInstance().getUserState();
 		BundleKeys.CURR_ACCOUNT = editingAccount;
-		editingAccount.getSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID);
+		if(editingAccount == null){
+			state.addAccount(accountName);
+			editingAccount = state.getAccount(accountName);
+		}
+		editingAccount = state.getAccount(accountName);
+		jobtypeId = editingAccount.getSetting(AccountSettingKeys.DEFAULT_JOBTYPE_ID);
+		if(jobtypeId != null) {
+			JobType jType = AndroidState.getInstance().getUserState()
+	                .getProvider(editingAccount).getJobType(Long.valueOf(jobtypeId));
+			if(jType!=null) {
+				tvJobType.setText(jType.name);
+			} else {
+				tvJobType.setText("None Selected");
+			}
+		} else {
+			tvJobType.setText("None Selected");
+		}
 		etdispName.setText(editingAccount.getDisplayName());
 		etAccUsername.setText(editingAccount.getRemoteUsername());
 		etAccPassword.setText(editingAccount.getRemotePassword());
@@ -418,6 +475,20 @@ public class EditAccountActivity extends EntradaActivity
          }
     }
 
+    protected void saveDictatorName(){
+    	try {
+    		if(!editingAccount.getDisplayName().equals(etdictatorName.getText().toString())) {
+		    	MainUserDatabaseProvider provider = new MainUserDatabaseProvider(false);
+		    	provider.updateDictatorName(Long.valueOf(accountName), etdictatorName.getText().toString());
+		    	UserPrivate up = AndroidState.getInstance().getUserState().getUserData();
+		    	editingAccount.setDisplayName(etdictatorName.getText().toString());
+		    	up.save();
+    		}
+    	} catch(Exception ex){
+    		ex.printStackTrace();
+    	}
+    }
+    
     @Override
     public void onBackPressed()
     {
@@ -452,6 +523,8 @@ public class EditAccountActivity extends EntradaActivity
        	 return true;
        	 
         case R.id.item_edit_done:
+        	saveDictatorName();
+        	
         	startActivity(new Intent(this, EntradaSettings.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
         	return true;
        	 

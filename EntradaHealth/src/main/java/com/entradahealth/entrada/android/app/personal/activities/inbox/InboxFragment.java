@@ -44,8 +44,6 @@ import com.entradahealth.entrada.android.app.personal.activities.job_list.JobLis
 import com.entradahealth.entrada.android.app.personal.activities.settings.EntradaSettings;
 import com.entradahealth.entrada.android.app.personal.utils.NetworkState;
 import com.entradahealth.entrada.android.app.widget.SwipeListView;
-import com.entradahealth.entrada.core.auth.exceptions.AccountException;
-import com.entradahealth.entrada.core.auth.exceptions.InvalidPasswordException;
 import com.entradahealth.entrada.core.domain.TOU;
 import com.entradahealth.entrada.core.domain.exceptions.DomainObjectWriteException;
 import com.entradahealth.entrada.core.domain.providers.MainUserDatabaseProvider;
@@ -56,7 +54,6 @@ import com.entradahealth.entrada.core.inbox.dao.ENTQBConversationHandler;
 import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectReader;
 import com.entradahealth.entrada.core.inbox.service.NewConversationBroadcastService;
 import com.entradahealth.entrada.core.inbox.service.SaveMessagesContentService;
-import com.entradahealth.entrada.core.inbox.service.SaveSMContentService;
 import com.entradahealth.entrada.core.remote.APIService;
 import com.entradahealth.entrada.core.remote.exceptions.ServiceException;
 
@@ -86,24 +83,14 @@ public class InboxFragment extends Fragment {
 		super.onCreate(savedInstanceState);
 		BundleKeys.fromSecureMessaging = false;
 		getActivity().getActionBar().setTitle("Messages");
-		getActivity().registerReceiver(broadcastReceiver, new IntentFilter("CONNECTIVITY_CHANGED"));
+		//getActivity().registerReceiver(broadcastReceiver, new IntentFilter("CONNECTIVITY_CHANGED"));
 		application = (EntradaApplication) EntradaApplication.getAppContext();
 		m_androidId = Secure.getString(getActivity().getContentResolver(), Secure.ANDROID_ID);
 		UserState state = AndroidState.getInstance().getUserState();
 		try {
-			state.setSMUser();
 			EnvironmentHandlerFactory envFactory = EnvironmentHandlerFactory.getInstance();
 			Environment env = envFactory.getHandler(application.getStringFromSharedPrefs("environment"));
 		 	service = new APIService(env.getApi());
-		} catch (DomainObjectWriteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (AccountException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidPasswordException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -202,11 +189,14 @@ public class InboxFragment extends Fragment {
 							}else{
 								getTOUContent(SessionToken);
 							}
-							
 						}else{
-							conversationsListView.setFocusable(true);
-					        conversationsListView.setFocusableInTouchMode(true);
-					        conversationsListView.setEnabled(true);
+							try{
+								conversationsListView.setFocusable(true);
+						        conversationsListView.setFocusableInTouchMode(true);
+						        conversationsListView.setEnabled(true);
+							} catch(Exception ex){
+								
+							}
 						}
 					}else{
 						//Show pop up
@@ -251,8 +241,8 @@ public class InboxFragment extends Fragment {
 		conversationsListView.setFocusable(true);
         conversationsListView.setFocusableInTouchMode(true);
         conversationsListView.setEnabled(true);
+		getActivity().registerReceiver(messagesLoadedReceiver, new IntentFilter(SaveMessagesContentService.BROADCAST_ACTION));
 		if(SaveMessagesContentService.isRunning()){
-			getActivity().registerReceiver(messagesLoadedReceiver, new IntentFilter(SaveMessagesContentService.BROADCAST_ACTION));
 			conversationsLoadingTV.setVisibility(View.VISIBLE);
 		}
 		getActivity().getActionBar().setTitle("Messages");
@@ -269,31 +259,31 @@ public class InboxFragment extends Fragment {
 		// TODO Auto-generated method stub
 		super.onDetach();
 		dialog = null;
-		getActivity().unregisterReceiver(broadcastReceiver);
+		//getActivity().unregisterReceiver(broadcastReceiver);
 	}
 	
-	BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-	    @Override
-	    public void onReceive(Context context, Intent intent) {
-			try {
-				NetworkState ns = new NetworkState(
-						EntradaApplication.getAppContext());
-				boolean isConnected = ns.isConnectingToInternet();
-				if (!isConnected) {
-					composeMenuItem = menu.findItem(R.id.item_new_msg);
-					composeMenuItem.setEnabled(false);
-					composeMenuItem.getIcon().setAlpha(80);
-				} else {
-					composeMenuItem = menu.findItem(R.id.item_new_msg);
-					composeMenuItem.setEnabled(true);
-					composeMenuItem.getIcon().setAlpha(255);
-				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
-	    }
-        
-    };
+//	BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+//	    @Override
+//	    public void onReceive(Context context, Intent intent) {
+//			try {
+//				NetworkState ns = new NetworkState(
+//						EntradaApplication.getAppContext());
+//				boolean isConnected = ns.isConnectingToInternet();
+//				if (!isConnected) {
+//					composeMenuItem = menu.findItem(R.id.item_new_msg);
+//					composeMenuItem.setEnabled(false);
+//					composeMenuItem.getIcon().setAlpha(80);
+//				} else {
+//					composeMenuItem = menu.findItem(R.id.item_new_msg);
+//					composeMenuItem.setEnabled(true);
+//					composeMenuItem.getIcon().setAlpha(255);
+//				}
+//			} catch (Exception ex) {
+//				ex.printStackTrace();
+//			}
+//	    }
+//        
+//    };
 	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -331,7 +321,9 @@ public class InboxFragment extends Fragment {
 	    	int index = conversationsListView.getFirstVisiblePosition();
 	    	View v = conversationsListView.getChildAt(0);
 	    	int top = (v == null) ? 0 : (v.getTop() - conversationsListView.getPaddingTop());
+	    	String conId = (adapter!=null) ? adapter.getDelOpenConvId() : null;
 			adapter = new ConversationsListAdapter(context, conversationslist, conversationsListView, getFragmentManager());
+			adapter.setDelOpenConvId(conId);
 			conversationsListView.setAdapter(adapter);
 			conversationsListView.setSelectionFromTop(index, top);
 	    }
@@ -681,7 +673,9 @@ public class InboxFragment extends Fragment {
                 BundleKeys.isTOUAccepted = false;
                 isAlertShowing = false;
                 getActivity().finish();
-                
+				Intent intent = new Intent(EntradaApplication.getAppContext(), JobListActivity.class);
+				intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+				startActivity(intent);
             }
         });
         

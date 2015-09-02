@@ -160,4 +160,12 @@ public class BundleKeys {
     public static final String JOBLIST_PERMISSION = "joblistpermission";
     public static final String TOUVERSION = "touversion";
     public static final String USERID = "userid";
+    public static final String DONT_RELAUNCH = "dont_relaunch";
+    public static boolean CAPTURE_IMAGE = false;
+    public static boolean SHOW_PIN = true;
+    public static String FROM_SETTINGS = "fromSettings";
+    public static String FROM_ADD_ACCOUNT = "fromAddAccount";
+    public static String FROM_REDEEM_INVITE = "fromRedeemInvite";
+    public static int SM_MESSAGES_SHOW_ONSCROLL = 15;
+    public static boolean openPatientSearch = true;
 }

@@ -14,6 +14,8 @@ import org.json.JSONObject;
 import com.entradahealth.entrada.android.app.personal.AndroidState;
 import com.entradahealth.entrada.android.app.personal.BundleKeys;
 import com.entradahealth.entrada.android.app.personal.EntradaApplication;
+import com.entradahealth.entrada.android.app.personal.Environment;
+import com.entradahealth.entrada.android.app.personal.EnvironmentHandlerFactory;
 import com.entradahealth.entrada.android.app.personal.UserState;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTConversation;
 import com.entradahealth.entrada.android.app.personal.activities.inbox.models.ENTMessage;
@@ -25,6 +27,7 @@ import com.entradahealth.entrada.core.inbox.domain.providers.SMDomainObjectReade
 import com.entradahealth.entrada.core.inbox.encryption.AES256Cipher;
 import com.entradahealth.entrada.core.inbox.service.ENTChatManager;
 import com.entradahealth.entrada.core.inbox.service.ENTQBChatManagerImpl;
+import com.entradahealth.entrada.core.remote.APIService;
 import com.google.gson.Gson;
 
 public class ENTQBMessageHandler implements ENTMessageHandler{
@@ -81,7 +84,7 @@ public class ENTQBMessageHandler implements ENTMessageHandler{
 
 	public List<ENTMessage> getMessages(ENTConversation conversation){
 		state = AndroidState.getInstance().getUserState();
-		try {
+/*		try {
 			state.setSMUser();
 		} catch (DomainObjectWriteException e) {
 			e.printStackTrace();
@@ -90,9 +93,41 @@ public class ENTQBMessageHandler implements ENTMessageHandler{
 		} catch (InvalidPasswordException e) {
 			e.printStackTrace();
 		}
-		application = (EntradaApplication) EntradaApplication.getAppContext();
+*/		application = (EntradaApplication) EntradaApplication.getAppContext();
 		reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
 		return reader.getMessagesFromConversation(conversation.getId());
+	}	
+
+	public List<ENTMessage> getMessages(ENTConversation conversation, int offset, int limit){
+		state = AndroidState.getInstance().getUserState();
+/*		try {
+			state.setSMUser();
+		} catch (DomainObjectWriteException e) {
+			e.printStackTrace();
+		} catch (AccountException e) {
+			e.printStackTrace();
+		} catch (InvalidPasswordException e) {
+			e.printStackTrace();
+		}
+*/		application = (EntradaApplication) EntradaApplication.getAppContext();
+		reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+		return reader.getMessagesFromConversation(conversation.getId(), offset, limit);
+	}	
+
+	public int getMessagesCount(ENTConversation conversation){
+		state = AndroidState.getInstance().getUserState();
+/*		try {
+			state.setSMUser();
+		} catch (DomainObjectWriteException e) {
+			e.printStackTrace();
+		} catch (AccountException e) {
+			e.printStackTrace();
+		} catch (InvalidPasswordException e) {
+			e.printStackTrace();
+		}
+*/		application = (EntradaApplication) EntradaApplication.getAppContext();
+		reader = state.getSMProvider(application.getStringFromSharedPrefs(BundleKeys.CURRENT_QB_LOGIN));
+		return reader.getConversationMessagesCount(conversation.getId());
 	}	
 	
 	@Override
@@ -102,6 +137,14 @@ public class ENTQBMessageHandler implements ENTMessageHandler{
 			if(response.getStatusCode() == 422 || response.getStatusCode() == 401){
 				chatManager.login();
 				response = chatManager.getChatMessages(conversation);
+			}
+			if(conversation.getPassPhrase()==null || conversation.getPassPhrase().isEmpty()) {
+				EnvironmentHandlerFactory envFactory = EnvironmentHandlerFactory.getInstance();
+				Environment env = envFactory.getHandler(application.getStringFromSharedPrefs("environment"));
+				APIService service = new APIService(env.getApi());
+				String passPhrase = service.getMessageThreadDetails(application.getStringFromSharedPrefs(BundleKeys.SESSION_TOKEN), conversation.getId());
+				application.addPassPhrase(conversation.getId(), passPhrase);
+				conversation.setPassPhrase(passPhrase);
 			}
 			return buildENTMessageListFromResponse(response.getResponseData(), conversation.getPassPhrase());
 		} catch (UnsupportedEncodingException e) {

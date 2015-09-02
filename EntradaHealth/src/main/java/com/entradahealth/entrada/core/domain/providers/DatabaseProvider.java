@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -34,7 +33,6 @@ import com.entradahealth.entrada.android.app.personal.activities.add_account.EUs
 import com.entradahealth.entrada.android.app.personal.activities.schedule.model.Resource;
 import com.entradahealth.entrada.android.app.personal.activities.schedule.model.Schedule;
 import com.entradahealth.entrada.android.app.personal.utils.AccountSettingKeys;
-import com.entradahealth.entrada.core.auth.Account;
 import com.entradahealth.entrada.core.db.H2Utils;
 import com.entradahealth.entrada.core.domain.Dictation;
 import com.entradahealth.entrada.core.domain.Encounter;
@@ -421,42 +419,7 @@ public class DatabaseProvider implements DomainObjectProvider {
 
 		return ImmutableList.copyOf(Job.sortJobs(jobs));
 	}
-	
-	private static final String SQL_SCHEDULE_SEARCH_QUERY = "SELECT * FROM Schedule JOIN patients ON Schedule.PatientID = patients.PatientID "
-			+ "WHERE patients.PatientID IN (%s);";
-	
-	@Override
-	public ArrayList<Schedule> searchSchedules(String searchText) {
-		if (Strings.isNullOrEmpty(searchText)) {
-			//return ImmutableList.copyOf(Job.sortJobs(getJobs()));
-		}
-		final ImmutableSet<Patient> patients = searchPatients(searchText);
 
-		final Iterable<Long> patientIds = Iterables.transform(patients,
-				new Function<Patient, Long>() {
-					@Override
-					public Long apply(@Nullable Patient patient) {
-						return (patient != null) ? patient.id : 0;
-					}
-				});
-
-		String ids = Providers.COMMA_JOINER.join(patientIds);
-
-		PreparedStatement stmt = null;
-		ResultSet rs = null;
-		try {
-			stmt = _conn.prepareStatement(String.format(SQL_SCHEDULE_SEARCH_QUERY,ids));
-			rs = stmt.executeQuery();
-
-			return createSchedules(rs);
-		} catch (Exception e) {
-			throw new DatabaseProviderException(e);
-		} finally {
-			 H2Utils.close(rs);
-			 H2Utils.close(stmt);
-		}
-	}
-	
 	private List<Job> createJobs(ResultSet rs) throws SQLException {
 		List<Job> jobs = Lists.newArrayList();
 
@@ -475,6 +438,11 @@ public class DatabaseProvider implements DomainObjectProvider {
 	private static final String SQL_GET_JOBTYPES = "SELECT * FROM job_types;";
 	private static final String SQL_GET_JOBTYPES_BY_ID = "SELECT * FROM job_types WHERE "
 			+ JobType.SQL_FIELD_ID + " = ?;";
+	private static final String SQL_GET_JOBTYPES_BY_DISABLEGENERICJOBS = "SELECT * FROM job_types WHERE "
+			+ JobType.SQL_FIELD_DISABLE + " = ?;";
+
+	private static final String SQL_GET_JOBTYPES_BY_DISABLEGENERICJOBS_AND_ID = "SELECT * FROM job_types WHERE "
+			+ JobType.SQL_FIELD_DISABLE + " = ? AND " + JobType.SQL_FIELD_ID + " =?;";
 
 	@Override
 	public JobType getJobType(long id) {
@@ -487,6 +455,51 @@ public class DatabaseProvider implements DomainObjectProvider {
 		List<JobType> list = jobTypeQuery(SQL_GET_JOBTYPES, null);
 		Collections.sort(list);
 		return ImmutableList.copyOf(list);
+	}
+	
+	@Override
+	public JobType getDefaultGenericJobType() {
+		List<JobType> list = getDefaultGenericJobTypes();
+		return list.get(0);
+	}
+
+	@Override
+	public List<JobType> getDefaultGenericJobTypes() {
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		List<JobType> list = null; 
+		try {
+			stmt = _conn.prepareStatement(SQL_GET_JOBTYPES_BY_DISABLEGENERICJOBS);
+			stmt.setString(1, "false");
+			rs = stmt.executeQuery();
+			list = createJobTypes(rs);
+		} catch (Exception e) {
+			throw new DatabaseProviderException(e);
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
+		Collections.sort(list);
+		return list;
+	}
+	
+	@Override
+	public boolean isExistsInDefaultGenericJobTypes(Long jobTypeId){
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = _conn.prepareStatement(SQL_GET_JOBTYPES_BY_DISABLEGENERICJOBS_AND_ID);
+			stmt.setString(1, "false");
+			stmt.setLong(2, jobTypeId);
+			rs = stmt.executeQuery();
+			List<JobType> list = createJobTypes(rs);
+			return list.size()!=0;
+		} catch (Exception e) {
+			throw new DatabaseProviderException(e);
+		} finally {
+			 H2Utils.close(rs);
+			 H2Utils.close(stmt);
+		}
 	}
 
 	private List<JobType> jobTypeQuery(String query, Long id) {
@@ -1184,10 +1197,10 @@ public class DatabaseProvider implements DomainObjectProvider {
 		long jobTypeId = -1;
 
 		final UserState state = AndroidState.getInstance().getUserState();
-		synchronized (state) {
+//		synchronized (state) {
 			jobTypeId = Long.valueOf(state.getCurrentAccount().getSetting(
 					AccountSettingKeys.DEFAULT_JOBTYPE_ID));
-		}
+//		}
 		Integer queueId = null;
 		boolean stat = false;
 
@@ -1436,7 +1449,6 @@ public class DatabaseProvider implements DomainObjectProvider {
 		writePhysicians(data.physicians);
 		writeReferringPhysicians(data.referringPhysicians);
 		syncFixups();
-
 
 	}
 
@@ -1974,7 +1986,7 @@ public class DatabaseProvider implements DomainObjectProvider {
 
 	// Resource names operations.
 	private static final String SQL_GET_RESOURCES = "SELECT * FROM ResourceNames ORDER BY ResourceName ASC;";
-	private static final String SQL_DELETE_RESOURCE = "DELETE FROM ResourceNames;";
+	private static final String SQL_DELETE_RESOURCE = "DELETE * FROM ResourceNames;";
 	
 	// Used to get the resource names form the database.
 	@Override
@@ -2201,5 +2213,54 @@ public class DatabaseProvider implements DomainObjectProvider {
 		}
 		return resources;
 	}
+	
+	    private static final String SQL_SCHEDULE_SEARCH_QUERY = "SELECT * FROM Schedule JOIN patients ON Schedule.PatientID = patients.PatientID "
+	            + "WHERE patients.PatientID IN (%s);";
+	
+	@Override
+	public ArrayList<Schedule> searchSchedules(String searchText) {
+	if (Strings.isNullOrEmpty(searchText)) {
+	            //return ImmutableList.copyOf(Job.sortJobs(getJobs()));
+	}
+	final ImmutableSet<Patient> patients = searchPatients(searchText);
+	
+	final Iterable<Long> patientIds = Iterables.transform(patients,
+	                           new Function<Patient, Long>() {
+	                                          @Override
+	                                          public Long apply(@Nullable Patient patient) {
+	                                                         return (patient != null) ? patient.id : 0;
+	                                          }
+	                           });
+	
+	String ids = Providers.COMMA_JOINER.join(patientIds);
+	
+	PreparedStatement stmt = null;
+	ResultSet rs = null;
+	try {
+	            stmt = _conn.prepareStatement(String.format(SQL_SCHEDULE_SEARCH_QUERY,ids));
+	            rs = stmt.executeQuery();
+	
+	            return createSchedules(rs);
+	} catch (Exception e) {
+	            throw new DatabaseProviderException(e);
+	} finally {
+	            H2Utils.close(rs);
+	            H2Utils.close(stmt);
+	}
+	}
+
+	@Override
+	public void deleteDictator(Dictator dictator) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void updateDictatorName(long dictatorId, String dictatorName)
+			throws DomainObjectWriteException {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 }

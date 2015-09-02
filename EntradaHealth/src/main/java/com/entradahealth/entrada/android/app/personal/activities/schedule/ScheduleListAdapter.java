@@ -5,8 +5,8 @@ import java.util.List;
 
 import se.emilsjolander.stickylistheaders.StickyListHeadersAdapter;
 import android.annotation.TargetApi;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -134,9 +134,9 @@ implements StickyListHeadersAdapter, SectionIndexer {
 				
 				DemoGraphicFragment fragment = new DemoGraphicFragment();
 				fragment.setArguments(bundle);
-				FragmentManager fragmentManager = ((ScheduleActivity)mContext).getFragmentManager();
+				FragmentManager fragmentManager = ((ScheduleActivity)mContext).getSupportFragmentManager();
 				FragmentTransaction fragtransacion = fragmentManager.beginTransaction();
-				fragtransacion.addToBackStack(null);
+				fragtransacion.addToBackStack("demographic");
 				fragtransacion.add(android.R.id.content,fragment, "demographic").commit();
 				
 			}

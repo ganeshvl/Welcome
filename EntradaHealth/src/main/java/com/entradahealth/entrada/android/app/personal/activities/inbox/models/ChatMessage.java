@@ -141,9 +141,6 @@ public class ChatMessage {
 	public void setSelectedContact(String selContact){
 		this.selectedContact = selContact;
 	}
-	public String getSelectedContact(){
-		return selectedContact;
-	}
 	public String getAttachmentId() {
 		return attachmentId;
 	}
